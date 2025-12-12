@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 via-accent-600 to-primary-600;
+  }
+
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(to right, #0ea5e9, #d946ef, #0ea5e9);
+    padding: 2px;
+    border-radius: 0.5rem;
+  }
+
+  .gradient-border > * {
+    @apply bg-white rounded-lg;
+  }
+}
