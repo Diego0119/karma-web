@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ArrowRight, Rocket } from 'lucide-react';
 
 export default function CTA() {
@@ -10,7 +11,7 @@ export default function CTA() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-4 py-2 mb-8">
           <Rocket className="w-4 h-4 text-white" />
-          <span className="text-sm font-medium text-white">Únete a miles de negocios exitosos</span>
+          <span className="text-sm font-medium text-white">Impulsa la lealtad de tus clientes</span>
         </div>
 
         <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
@@ -18,22 +19,24 @@ export default function CTA() {
         </h2>
 
         <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
-          Comienza tu prueba gratuita hoy y descubre cómo Karma puede ayudarte a construir relaciones duraderas con tus clientes.
+          Descubre cómo Karma puede ayudarte a construir relaciones duraderas con tus clientes y hacer crecer tu negocio.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="group bg-white text-primary-600 px-8 py-4 rounded-xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
-            Comenzar gratis por 14 días
+          <Link
+            to="/register"
+            className="group bg-white text-primary-600 px-8 py-4 rounded-xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            Comenzar ahora
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </button>
-          <button className="bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-semibold border-2 border-white/30 hover:bg-white/20 transition-all duration-200">
-            Hablar con un experto
-          </button>
+          </Link>
+          <a
+            href="#pricing"
+            className="bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-semibold border-2 border-white/30 hover:bg-white/20 transition-all duration-200 text-center"
+          >
+            Ver planes
+          </a>
         </div>
-
-        <p className="text-white/70 text-sm mt-8">
-          No se requiere tarjeta de crédito • Configuración en 5 minutos • Cancela cuando quieras
-        </p>
       </div>
     </div>
   );

@@ -8,12 +8,6 @@ const features = [
     gradient: 'from-blue-500 to-cyan-500'
   },
   {
-    icon: Smartphone,
-    title: 'App Móvil Intuitiva',
-    description: 'Tus clientes acceden a sus recompensas desde cualquier lugar con nuestra app fácil de usar.',
-    gradient: 'from-purple-500 to-pink-500'
-  },
-  {
     icon: BarChart3,
     title: 'Analytics en Tiempo Real',
     description: 'Toma decisiones informadas con datos detallados sobre el comportamiento de tus clientes.',
@@ -36,7 +30,13 @@ const features = [
     title: 'Soporte Dedicado',
     description: 'Nuestro equipo está aquí para ayudarte a maximizar el éxito de tu programa.',
     gradient: 'from-pink-500 to-rose-500'
-  }
+  },
+  {
+    icon: Smartphone,
+    title: 'Apple Wallet y Google Wallet',
+    description: 'Se integra directamente con las wallets nativas. Tus clientes no necesitan descargar aplicaciones adicionales.',
+    gradient: 'from-purple-500 to-pink-500'
+  },
 ];
 
 export default function Features() {
@@ -46,7 +46,7 @@ export default function Features() {
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Todo lo que necesitas para
-            <span className="text-gradient block mt-2">fidelizar como un pro</span>
+            <span className="text-gradient block mt-2">fidelizar como un profesional</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Herramientas poderosas diseñadas para hacer crecer tu negocio y construir relaciones duraderas.

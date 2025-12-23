@@ -1,4 +1,5 @@
-import { Sparkles, TrendingUp, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Sparkles, TrendingUp } from 'lucide-react';
 
 export default function Hero() {
   return (
@@ -11,45 +12,68 @@ export default function Hero() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-200 rounded-full px-4 py-2 mb-8">
-            <Sparkles className="w-4 h-4 text-primary-600" />
-            <span className="text-sm font-medium text-primary-700">Transforma la fidelización de tus clientes</span>
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Contenido de texto */}
+          <div className="text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-200 rounded-full px-4 py-2 mb-8">
+              <Sparkles className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-primary-700">Transforma la fidelización de tus clientes</span>
+            </div>
+
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+              Aumenta tus ventas con
+              <span className="text-gradient block mt-2">fidelización inteligente</span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
+              La plataforma de fidelización que necesitas para convertir clientes ocasionales en embajadores de tu marca. Simple, potente y diseñada para negocios modernos.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 lg:justify-start justify-center">
+              <Link
+                to="/register"
+                className="group bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                Comenzar gratis
+                <TrendingUp className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <a
+                href="#how-it-works"
+                className="bg-white text-gray-700 px-8 py-4 rounded-xl font-semibold border-2 border-gray-200 hover:border-primary-600 hover:text-primary-600 transition-all duration-200 text-center"
+              >
+                Ver cómo funciona
+              </a>
+            </div>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-            Aumenta tus ventas con
-            <span className="text-gradient block mt-2">fidelización inteligente</span>
-          </h1>
+          {/* Imagen del celular */}
+          <div className="relative lg:block hidden">
+            <div className="relative">
+              {/* Círculo decorativo detrás */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-400/20 to-accent-400/20 rounded-full blur-3xl transform scale-125"></div>
 
-          <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-            La plataforma de fidelización que necesitas para convertir clientes ocasionales en embajadores de tu marca. Simple, potente y diseñada para negocios modernos.
-          </p>
+              {/* Imagen del celular */}
+              <div className="relative z-10 flex justify-center">
+                <img
+                  src="/images/phone_image.png"
+                  alt="Karma App - Wallet digital de fidelización"
+                  className="w-full max-w-4xl drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+                />
+              </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <button className="group bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
-              Comenzar gratis
-              <TrendingUp className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button className="bg-white text-gray-700 px-8 py-4 rounded-xl font-semibold border-2 border-gray-200 hover:border-primary-600 hover:text-primary-600 transition-all duration-200">
-              Ver demo
-            </button>
+              {/* Elementos decorativos flotantes */}
+              <div className="absolute -top-10 -left-10 w-24 h-24 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full opacity-20 animate-pulse"></div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-gradient-to-br from-accent-500 to-primary-500 rounded-full opacity-20 animate-pulse delay-1000"></div>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-100 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-4xl font-bold text-gradient mb-2">+40%</div>
-              <div className="text-gray-600 font-medium">Aumento en retención</div>
-            </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-100 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-4xl font-bold text-gradient mb-2">5,000+</div>
-              <div className="text-gray-600 font-medium">Negocios activos</div>
-            </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-100 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-4xl font-bold text-gradient mb-2">98%</div>
-              <div className="text-gray-600 font-medium">Satisfacción</div>
-            </div>
+          {/* Imagen móvil - centrada */}
+          <div className="lg:hidden flex justify-center mt-12">
+            <img
+              src="/images/phone_image.png"
+              alt="Karma App - Wallet digital de fidelización"
+              className="w-full max-w-sm drop-shadow-2xl"
+            />
           </div>
         </div>
       </div>
