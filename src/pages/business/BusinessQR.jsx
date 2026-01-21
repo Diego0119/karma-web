@@ -33,7 +33,7 @@ export default function BusinessQR() {
         };
         reader.readAsDataURL(blob);
       } catch (error) {
-        console.error('Error converting QR to base64:', error);
+        
       }
     };
 
@@ -78,7 +78,7 @@ export default function BusinessQR() {
 
       setMessage({ type: 'success', text: 'QR descargado exitosamente' });
     } catch (error) {
-      console.error('Error downloading QR:', error);
+      
       setMessage({ type: 'error', text: 'Error al descargar el QR' });
     }
   };
@@ -111,7 +111,7 @@ export default function BusinessQR() {
 
       setMessage({ type: 'success', text: 'Template descargado exitosamente' });
     } catch (error) {
-      console.error('Error generating template:', error);
+      
       setMessage({ type: 'error', text: 'Error al descargar el template' });
     }
   };

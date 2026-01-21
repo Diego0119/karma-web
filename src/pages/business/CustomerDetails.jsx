@@ -30,7 +30,7 @@ export default function CustomerDetails() {
       const res = await api.get(`/business/my/customers/${customerId}`);
       setCustomerData(res.data);
     } catch (error) {
-      console.error('Error loading customer details:', error);
+      
     } finally {
       setLoading(false);
     }

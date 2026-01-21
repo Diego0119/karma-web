@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get('/auth/profile');
       setUser(response.data);
-    } catch (error) {
+    } catch {
       // No hay sesión activa
       setUser(null);
     } finally {
@@ -37,15 +37,23 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/login', { email, password });
       const { user: userData } = response.data;
 
-      // La cookie httpOnly se guarda automáticamente
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Solo guardar en estado, la cookie httpOnly maneja la sesión
       setUser(userData);
 
       return { success: true };
     } catch (error) {
+      let errorMessage = 'Error al iniciar sesión';
+
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        errorMessage = Array.isArray(msg) ? msg[0] : msg;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Credenciales inválidas';
+      }
+
       return {
         success: false,
-        error: error.response?.data?.message || 'Error al iniciar sesión',
+        error: errorMessage,
       };
     }
   };
@@ -56,8 +64,7 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/register', { email, password, role });
       const { user: userData } = response.data;
 
-      // La cookie httpOnly se guarda automáticamente
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Solo guardar en estado, la cookie httpOnly maneja la sesión
       setUser(userData);
 
       // Paso 2: Si es BUSINESS y tiene businessName, crear perfil del negocio automáticamente
@@ -70,10 +77,7 @@ export const AuthProvider = ({ children }) => {
             address: '',
             phone: '',
           });
-          console.log('✅ Business profile created successfully during registration');
-        } catch (businessError) {
-          console.error('❌ Error creating business profile during registration:', businessError);
-          console.error('Response:', businessError.response?.data);
+        } catch {
           // No fallar el registro si falla la creación del negocio
           // El onboarding manejará la creación del negocio si no existe
         }
@@ -81,9 +85,17 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
+      // Manejar diferentes formatos de error del backend
+      let errorMessage = 'Error al registrarse';
+
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        errorMessage = Array.isArray(msg) ? msg[0] : msg;
+      }
+
       return {
         success: false,
-        error: error.response?.data?.message || 'Error al registrarse',
+        error: errorMessage,
       };
     }
   };
@@ -92,11 +104,10 @@ export const AuthProvider = ({ children }) => {
     try {
       // Llamar al backend para eliminar la cookie httpOnly
       await api.post('/auth/logout');
-    } catch (error) {
-      console.error('Error during logout:', error);
+    } catch {
+      // Ignorar errores de logout
     } finally {
       // Limpiar estado local
-      localStorage.removeItem('user');
       setUser(null);
     }
   };

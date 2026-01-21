@@ -29,7 +29,7 @@ export default function JoinBusiness() {
       const res = await api.get(`/public/business/${businessQrCode}`);
       setBusinessInfo(res.data);
     } catch (error) {
-      console.error('Error loading business:', error);
+      
       setError('Negocio no encontrado');
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ export default function JoinBusiness() {
       // Redirigir a página de éxito con datos
       navigate('/join-success', { state: res.data });
     } catch (error) {
-      console.error('Error joining business:', error);
+      
       setError(
         error.response?.data?.message ||
         error.response?.status === 400 && error.response?.data?.message?.includes('email')
@@ -171,7 +171,7 @@ export default function JoinBusiness() {
                       <h4 className="font-bold text-gray-900 mb-1">{program.name}</h4>
                       {program.type === 'POINTS' ? (
                         <p className="text-sm text-gray-600">
-                          Gana 1 punto por cada ${program.pointsConversionRate} de compra
+                          Gana 1 punto por cada ${Number(program.pointsConversionRate).toLocaleString('es-CL')} de compra
                         </p>
                       ) : (
                         <p className="text-sm text-gray-600">

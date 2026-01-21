@@ -78,7 +78,7 @@ export default function Onboarding() {
 
       setCurrentStep(2);
     } catch (error) {
-      console.error('Error saving business:', error);
+      
       alert('Error al guardar información del negocio. Por favor intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ export default function Onboarding() {
       await api.post('/loyalty/programs', payload);
       setCurrentStep(3);
     } catch (error) {
-      console.error('Error creating program:', error);
+      
     } finally {
       setLoading(false);
     }
@@ -131,7 +131,7 @@ export default function Onboarding() {
           });
           navigate('/dashboard');
         } catch (createError) {
-          console.error('Error creating business:', createError);
+          
           alert('Error al crear el perfil del negocio. Por favor completa el onboarding.');
         }
       } else {

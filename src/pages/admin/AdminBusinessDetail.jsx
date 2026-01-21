@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
+import { PRICING } from '../../constants/pricing';
 import {
   Building2,
   ArrowLeft,
@@ -45,9 +46,7 @@ export default function AdminBusinessDetail() {
   const loadBusinessDetail = async () => {
     try {
       setLoading(true);
-      console.log('📡 Loading business detail for ID:', id);
       const { data: businessData } = await api.get(`/admin/businesses/${id}`);
-      console.log('✅ Business data received:', businessData);
       setData(businessData);
       // Initialize form with current values
       setSubscriptionForm({
@@ -56,11 +55,6 @@ export default function AdminBusinessDetail() {
         daysToAdd: 30
       });
     } catch (error) {
-      console.error('❌ Error loading business detail:', error);
-      console.error('Response status:', error.response?.status);
-      console.error('Response data:', error.response?.data);
-      console.error('Error message:', error.message);
-
       // Mostrar error más detallado
       const errorMessage = error.response?.data?.message
         || error.response?.data?.error
@@ -82,7 +76,6 @@ export default function AdminBusinessDetail() {
       setShowUpdateModal(false);
       await loadBusinessDetail();
     } catch (error) {
-      console.error('Error updating subscription:', error);
       setMessage({
         type: 'error',
         text: error.response?.data?.message || 'Error al actualizar suscripción'
@@ -314,7 +307,7 @@ export default function AdminBusinessDetail() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                 >
                   <option value="FREE">FREE (Trial)</option>
-                  <option value="PRO">PRO ($24.990/mes + IVA)</option>
+                  <option value="PRO">PRO ({PRICING.PRO.formattedWithTax})</option>
                 </select>
               </div>
 

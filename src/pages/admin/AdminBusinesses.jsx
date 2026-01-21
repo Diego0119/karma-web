@@ -37,7 +37,7 @@ export default function AdminBusinesses() {
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (error) {
-      console.error('Error loading businesses:', error);
+      
       setError(error.response?.data?.message || 'Error al cargar negocios');
     } finally {
       setLoading(false);

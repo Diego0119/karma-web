@@ -1,43 +1,58 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { Suspense, lazy } from 'react';
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import GuestRoute from './components/GuestRoute';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import AdminLayout from './components/admin/AdminLayout';
 
-// Pages
-import LandingPage from './pages/LandingPage';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import Onboarding from './pages/onboarding/Onboarding';
-import JoinBusiness from './pages/public/JoinBusiness';
-import JoinSuccess from './pages/public/JoinSuccess';
-import About from './pages/About';
-import Privacy from './pages/legal/Privacy';
-import Terms from './pages/legal/Terms';
-import Cookies from './pages/legal/Cookies';
-import BusinessDashboard from './pages/business/BusinessDashboard';
-import BusinessProfile from './pages/business/BusinessProfile';
-import CardCustomization from './pages/business/CardCustomization';
-import Programs from './pages/business/Programs';
-import Rewards from './pages/business/Rewards';
-import Promotions from './pages/business/Promotions';
-import Notifications from './pages/business/Notifications';
-import RegisterSale from './pages/business/RegisterSale';
-import Customers from './pages/business/Customers';
-import CustomerDetails from './pages/business/CustomerDetails';
-import Transactions from './pages/business/Transactions';
-import BusinessQR from './pages/business/BusinessQR';
-import Billing from './pages/business/Billing';
+// Loading component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+  </div>
+);
 
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminBusinesses from './pages/admin/AdminBusinesses';
-import AdminBusinessDetail from './pages/admin/AdminBusinessDetail';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminCustomers from './pages/admin/AdminCustomers';
+// Lazy loaded pages
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Login = lazy(() => import('./pages/auth/Login'));
+const Register = lazy(() => import('./pages/auth/Register'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
+const JoinBusiness = lazy(() => import('./pages/public/JoinBusiness'));
+const JoinSuccess = lazy(() => import('./pages/public/JoinSuccess'));
+const About = lazy(() => import('./pages/About'));
+const Privacy = lazy(() => import('./pages/legal/Privacy'));
+const Terms = lazy(() => import('./pages/legal/Terms'));
+const Cookies = lazy(() => import('./pages/legal/Cookies'));
 
-// Payment Pages
-import PaymentReturn from './pages/payment/PaymentReturn';
+// Business pages
+const BusinessDashboard = lazy(() => import('./pages/business/BusinessDashboard'));
+const BusinessProfile = lazy(() => import('./pages/business/BusinessProfile'));
+const CardCustomization = lazy(() => import('./pages/business/CardCustomization'));
+const Programs = lazy(() => import('./pages/business/Programs'));
+const Rewards = lazy(() => import('./pages/business/Rewards'));
+const Promotions = lazy(() => import('./pages/business/Promotions'));
+const Notifications = lazy(() => import('./pages/business/Notifications'));
+const RegisterSale = lazy(() => import('./pages/business/RegisterSale'));
+const Customers = lazy(() => import('./pages/business/Customers'));
+const CustomerDetails = lazy(() => import('./pages/business/CustomerDetails'));
+const Transactions = lazy(() => import('./pages/business/Transactions'));
+const BusinessQR = lazy(() => import('./pages/business/BusinessQR'));
+const Billing = lazy(() => import('./pages/business/Billing'));
+
+// Admin pages
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminBusinesses = lazy(() => import('./pages/admin/AdminBusinesses'));
+const AdminBusinessDetail = lazy(() => import('./pages/admin/AdminBusinessDetail'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers'));
+const AdminExpiring = lazy(() => import('./pages/admin/AdminExpiring'));
+const AdminTransactions = lazy(() => import('./pages/admin/AdminTransactions'));
+
+// Payment pages
+const PaymentReturn = lazy(() => import('./pages/payment/PaymentReturn'));
 
 // Placeholder component para páginas en desarrollo
 function ComingSoon({ title }) {
@@ -82,6 +97,8 @@ function AdminRouter() {
         <Route path="/businesses/:id" element={<AdminBusinessDetail />} />
         <Route path="/users" element={<AdminUsers />} />
         <Route path="/customers" element={<AdminCustomers />} />
+        <Route path="/expiring" element={<AdminExpiring />} />
+        <Route path="/transactions" element={<AdminTransactions />} />
       </Routes>
     </AdminLayout>
   );
@@ -91,6 +108,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Rutas públicas */}
           <Route path="/" element={<LandingPage />} />
@@ -98,8 +116,10 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/join/:businessQrCode" element={<JoinBusiness />} />
           <Route path="/join-success" element={<JoinSuccess />} />
 
@@ -139,6 +159,7 @@ function App() {
           {/* Ruta por defecto */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </Router>
   );

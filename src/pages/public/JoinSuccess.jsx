@@ -1,11 +1,15 @@
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
-import { CheckCircle2, Award, Star, Download, ArrowRight, QrCode } from 'lucide-react';
+import { CheckCircle2, Award, Star, Download, ArrowRight, QrCode, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import api from '../../services/api';
 
 export default function JoinSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showQR, setShowQR] = useState(false);
+  const [loadingApple, setLoadingApple] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [error, setError] = useState('');
   const registrationData = location.state;
 
   // Si no hay datos de registro, redirigir al home
@@ -19,6 +23,61 @@ export default function JoinSuccess() {
   const customerQrImageUrl = customer.qrCode
     ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(customer.qrCode)}&size=300x300&margin=20`
     : '';
+
+  // Función para agregar a Apple Wallet
+  const addToAppleWallet = async () => {
+    setError('');
+    setLoadingApple(true);
+
+    try {
+      const response = await api.get(`/wallet/apple/${customer.id}`, {
+        responseType: 'blob', // Importante: recibir como blob
+      });
+
+      // Crear URL del blob y descargar
+      const blob = new Blob([response.data], { type: 'application/vnd.apple.pkpass' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'karma-loyalty-card.pkpass';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      
+      setError(
+        err.response?.data?.message ||
+        'Error al generar la tarjeta de Apple Wallet. Por favor intenta nuevamente.'
+      );
+    } finally {
+      setLoadingApple(false);
+    }
+  };
+
+  // Función para agregar a Google Wallet
+  const addToGoogleWallet = async () => {
+    setError('');
+    setLoadingGoogle(true);
+
+    try {
+      const response = await api.get(`/wallet/google/${customer.id}`);
+
+      // Redirigir a la URL de Google Wallet
+      if (response.data.walletUrl) {
+        window.location.href = response.data.walletUrl;
+      } else {
+        throw new Error('URL de Google Wallet no disponible');
+      }
+    } catch (err) {
+      
+      setError(
+        err.response?.data?.message ||
+        'Error al generar la tarjeta de Google Wallet. Por favor intenta nuevamente.'
+      );
+      setLoadingGoogle(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
@@ -95,7 +154,7 @@ export default function JoinSuccess() {
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">Descarga tu tarjeta digital</h4>
                 <p className="text-sm text-gray-600">
-                  Agrega tu tarjeta de fidelización a Apple Wallet o Google Wallet para tenerla siempre a mano
+                  Agrega tu tarjeta a Apple Wallet o Google Wallet. Tu código QR único estará guardado ahí para siempre
                 </p>
               </div>
             </div>
@@ -105,9 +164,9 @@ export default function JoinSuccess() {
                 <span className="text-primary-600 font-bold">2</span>
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Muestra tu QR al comprar</h4>
+                <h4 className="font-semibold text-gray-900 mb-1">Muestra tu tarjeta al comprar</h4>
                 <p className="text-sm text-gray-600">
-                  Cuando hagas una compra, muestra tu código QR desde tu wallet para acumular puntos o sellos
+                  En cada compra, solo abre tu wallet y muestra tu tarjeta. Tu código QR estará siempre disponible
                 </p>
               </div>
             </div>
@@ -132,9 +191,17 @@ export default function JoinSuccess() {
             <div className="mb-4">
               <QrCode className="w-8 h-8 text-primary-600 mx-auto mb-2" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">Tu código QR personal</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 mb-2">
                 Este es tu código único para acumular puntos y sellos
               </p>
+              <div className="inline-block bg-green-50 border border-green-200 rounded-lg px-4 py-2 mt-2">
+                <p className="text-xs text-green-800 font-semibold">
+                  ✓ Este código estará guardado en tu tarjeta de wallet
+                </p>
+                <p className="text-xs text-green-700">
+                  No te preocupes de perderlo, siempre lo tendrás a mano
+                </p>
+              </div>
             </div>
 
             {!showQR ? (
@@ -153,31 +220,59 @@ export default function JoinSuccess() {
                     className="w-64 h-64"
                   />
                 </div>
-                <p className="text-xs text-gray-500">
-                  Guarda este código o agrégalo a tu wallet
+                <p className="text-xs text-gray-500 font-medium">
+                  💡 Este mismo código aparecerá en tu tarjeta de wallet
                 </p>
               </div>
             )}
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-medium">{error}</span>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <button
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all"
-              onClick={() => window.alert('Funcionalidad de Apple Wallet próximamente')}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              onClick={addToAppleWallet}
+              disabled={loadingApple || loadingGoogle}
             >
-              <Download className="w-5 h-5" />
-              Agregar a Apple Wallet
+              {loadingApple ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Agregar a Apple Wallet
+                </>
+              )}
             </button>
 
             <button
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all"
-              onClick={() => window.alert('Funcionalidad de Google Wallet próximamente')}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              onClick={addToGoogleWallet}
+              disabled={loadingApple || loadingGoogle}
             >
-              <Download className="w-5 h-5" />
-              Agregar a Google Wallet
+              {loadingGoogle ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Agregar a Google Wallet
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -185,7 +280,7 @@ export default function JoinSuccess() {
         {/* Info Note */}
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-900 text-center">
-            💡 <strong>Tip:</strong> Agrega tu tarjeta a tu wallet para tener acceso rápido cuando hagas compras
+            💡 <strong>Tip:</strong> Una vez agregada a tu wallet, tu tarjeta con tu código QR estará siempre disponible. No necesitas preocuparte de recordar nada
           </p>
         </div>
       </div>

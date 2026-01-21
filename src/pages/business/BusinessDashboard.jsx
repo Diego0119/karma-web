@@ -13,10 +13,7 @@ import {
   Star,
   Sparkles,
   CheckCircle,
-  BarChart3,
-  CreditCard,
-  XCircle,
-  AlertCircle
+  XCircle
 } from 'lucide-react';
 
 export default function BusinessDashboard() {
@@ -28,8 +25,6 @@ export default function BusinessDashboard() {
     promotions: 0,
   });
   const [analytics, setAnalytics] = useState(null);
-  const [programsStats, setProgramsStats] = useState(null);
-  const [topCustomers, setTopCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paymentMessage, setPaymentMessage] = useState({ type: '', text: '' });
 
@@ -96,27 +91,16 @@ export default function BusinessDashboard() {
 
       // Cargar analytics (opcional para negocios nuevos)
       try {
-        const [dashboardRes, customersRes, programsRes] = await Promise.all([
-          api.get('/analytics/dashboard'),
-          api.get('/analytics/top-customers?limit=5'),
-          api.get('/analytics/programs-stats'),
-        ]);
+        const dashboardRes = await api.get('/analytics/dashboard');
         setAnalytics(dashboardRes.data);
-        setTopCustomers(customersRes.data);
-        setProgramsStats(programsRes.data);
       } catch (error) {
-        // Es normal que analytics falle para negocios nuevos (404) o sin permisos (403)
-        const status = error.response?.status;
-        if (status === 404) {
-          console.log('ℹ️ Analytics not available yet (no data)');
-        } else if (status === 403) {
-          console.log('ℹ️ Analytics access restricted by backend');
-        } else {
-          console.error('❌ Error loading analytics:', error);
+        // Es normal que analytics falle para negocios nuevos
+        if (error.response?.status !== 404 && error.response?.status !== 403) {
+          
         }
       }
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      
     } finally {
       setLoading(false);
     }
@@ -261,129 +245,28 @@ export default function BusinessDashboard() {
         })}
       </div>
 
-      {/* Analytics Section */}
+      {/* Analytics Section - Métricas clave */}
       {analytics && (
-        <>
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-primary-600" />
-                Resumen de Actividad
-              </h2>
-            </div>
-
-            {/* Main Business Metrics */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-              <MetricCard
-                icon={<Users className="w-6 h-6" />}
-                title="Total Clientes"
-                value={analytics.totalCustomers}
-                color="primary"
-                subtitle="Clientes registrados"
-              />
-              {programsStats && (
-                <>
-                  <MetricCard
-                    icon={<CreditCard className="w-6 h-6" />}
-                    title="Tarjetas Emitidas"
-                    value={programsStats.totalCards}
-                    color="accent"
-                    subtitle="Total de tarjetas"
-                  />
-                  <MetricCard
-                    icon={<Award className="w-6 h-6" />}
-                    title="Tarjetas Activas"
-                    value={programsStats.activeCards}
-                    color="primary"
-                    subtitle="En progreso"
-                  />
-                  <MetricCard
-                    icon={<CheckCircle className="w-6 h-6" />}
-                    title="Tarjetas Completadas"
-                    value={programsStats.completedCards}
-                    color="accent"
-                    subtitle={`${programsStats.completionRate.toFixed(0)}% tasa completación`}
-                  />
-                </>
-              )}
-            </div>
-
-            {/* Points & Rewards Metrics */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <MetricCard
-                icon={<Star className="w-6 h-6" />}
-                title="Puntos Otorgados"
-                value={analytics.totalPointsGiven.toLocaleString('es-CL')}
-                color="primary"
-                subtitle="Total acumulados"
-              />
-              <MetricCard
-                icon={<Gift className="w-6 h-6" />}
-                title="Puntos Canjeados"
-                value={analytics.totalPointsRedeemed.toLocaleString('es-CL')}
-                color="accent"
-                subtitle="Total redimidos"
-              />
-              <MetricCard
-                icon={<TrendingUp className="w-6 h-6" />}
-                title="Promedio por Cliente"
-                value={Math.round(analytics.averagePointsPerCustomer).toLocaleString('es-CL')}
-                color="primary"
-                subtitle="Puntos promedio"
-              />
-              <MetricCard
-                icon={<Sparkles className="w-6 h-6" />}
-                title="Recompensas Canjeadas"
-                value={analytics.totalRewardsRedeemed}
-                color="accent"
-                subtitle="Total redenciones"
-              />
-            </div>
-          </div>
-
-          {/* Top Customers */}
-          {topCustomers.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary-600" />
-                  Top 5 Clientes
-                </h3>
-                <Link
-                  to="/dashboard/customers"
-                  className="text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1"
-                >
-                  Ver todos
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-              <div className="space-y-3">
-                {topCustomers.map((customer, index) => (
-                  <div
-                    key={customer.customerId}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-                        index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                        index === 1 ? 'bg-gray-200 text-gray-700' :
-                        index === 2 ? 'bg-orange-100 text-orange-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {index + 1}
-                      </span>
-                      <span className="font-medium text-gray-900">{customer.name}</span>
-                    </div>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 font-semibold rounded-full text-sm">
-                      <Star className="w-4 h-4" />
-                      {customer.totalPoints.toLocaleString('es-CL')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+        <div className="grid md:grid-cols-3 gap-6">
+          <MetricCard
+            icon={<Users className="w-6 h-6" />}
+            title="Total Clientes"
+            value={analytics.totalCustomers}
+            color="primary"
+          />
+          <MetricCard
+            icon={<Star className="w-6 h-6" />}
+            title="Puntos Otorgados"
+            value={analytics.totalPointsGiven.toLocaleString('es-CL')}
+            color="accent"
+          />
+          <MetricCard
+            icon={<Sparkles className="w-6 h-6" />}
+            title="Recompensas Canjeadas"
+            value={analytics.totalRewardsRedeemed}
+            color="primary"
+          />
+        </div>
       )}
 
       {/* Información del negocio */}

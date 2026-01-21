@@ -34,7 +34,7 @@ export default function Promotions() {
       if (error.response?.status === 404) {
         setPromotions([]);
       } else {
-        console.error('Error loading promotions:', error);
+        
         setMessage({ type: 'error', text: 'Error al cargar las promociones' });
       }
     } finally {

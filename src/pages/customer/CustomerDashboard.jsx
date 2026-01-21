@@ -52,7 +52,7 @@ export default function CustomerDashboard() {
         }
       }
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      
     } finally {
       setLoading(false);
     }

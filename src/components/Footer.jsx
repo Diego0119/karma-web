@@ -3,7 +3,7 @@ import { Linkedin } from 'lucide-react';
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const whatsappMessage = encodeURIComponent('Hola, quiero más información acerca de Karma 😄');
-  const whatsappUrl = `https://wa.me/56996298273?text=${whatsappMessage}`;
+  const whatsappUrl = `https://wa.me/+56996298273?text=${whatsappMessage}`;
 
   return (
     <footer className="bg-gray-900 text-gray-300">
@@ -33,7 +33,6 @@ export default function Footer() {
             <ul className="space-y-2">
               <li><a href="#features" className="hover:text-primary-400 transition-colors">Características</a></li>
               <li><a href="#pricing" className="hover:text-primary-400 transition-colors">Precios</a></li>
-              <li><a href="#benefits" className="hover:text-primary-400 transition-colors">Casos de uso</a></li>
             </ul>
           </div>
 

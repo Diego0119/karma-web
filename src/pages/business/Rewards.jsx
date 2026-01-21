@@ -16,7 +16,9 @@ export default function Rewards() {
     type: 'POINTS', // POINTS or STAMPS
     pointsCost: 100,
     stampsCost: 5,
-    isActive: true
+    isActive: true,
+    hasStock: false, // Si tiene stock limitado o ilimitado
+    stock: null // null = ilimitado, número = stock limitado
   });
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function Rewards() {
       if (error.response?.status === 404) {
         setRewards([]);
       } else {
-        console.error('Error loading rewards:', error);
+        
         setMessage({ type: 'error', text: 'Error al cargar las recompensas' });
       }
     } finally {
@@ -88,7 +90,8 @@ export default function Rewards() {
         name: formData.name,
         description: formData.description,
         type: formData.type,
-        isActive: formData.isActive
+        isActive: formData.isActive,
+        stock: formData.hasStock ? parseInt(formData.stock) : null
       };
 
       // Agregar el costo según el tipo
@@ -114,7 +117,9 @@ export default function Rewards() {
         type: 'POINTS',
         pointsCost: 100,
         stampsCost: 5,
-        isActive: true
+        isActive: true,
+        hasStock: false,
+        stock: null
       });
       loadRewards();
     } catch (error) {
@@ -133,7 +138,9 @@ export default function Rewards() {
       type: reward.type || 'POINTS',
       pointsCost: reward.pointsCost || 100,
       stampsCost: reward.stampsCost || 5,
-      isActive: reward.isActive
+      isActive: reward.isActive,
+      hasStock: reward.stock !== null && reward.stock !== undefined,
+      stock: reward.stock || null
     });
     setShowForm(true);
   };
@@ -182,7 +189,9 @@ export default function Rewards() {
       type: 'POINTS',
       pointsCost: 100,
       stampsCost: 5,
-      isActive: true
+      isActive: true,
+      hasStock: false,
+      stock: null
     });
   };
 
@@ -375,6 +384,52 @@ export default function Rewards() {
               </div>
             )}
 
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  name="hasStock"
+                  id="hasStock"
+                  checked={formData.hasStock}
+                  onChange={handleChange}
+                  className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <label htmlFor="hasStock" className="ml-3 text-sm font-medium text-gray-700">
+                  Esta recompensa tiene stock limitado
+                </label>
+              </div>
+
+              {formData.hasStock && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cantidad de stock disponible
+                  </label>
+                  <input
+                    type="number"
+                    name="stock"
+                    required={formData.hasStock}
+                    min="0"
+                    step="1"
+                    value={formData.stock || ''}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                    placeholder="Ej: 50"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Cuando el stock llegue a 0, los clientes no podrán canjear esta recompensa
+                  </p>
+                </div>
+              )}
+
+              {!formData.hasStock && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-900">
+                    ℹ️ <strong>Stock ilimitado:</strong> Los clientes siempre podrán canjear esta recompensa mientras esté activa
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -463,7 +518,7 @@ export default function Rewards() {
 
                     <p className="text-gray-600 mb-3">{reward.description}</p>
 
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm flex-wrap">
                       {reward.type === 'STAMPS' ? (
                         <span className="px-3 py-1 bg-accent-100 text-accent-700 font-semibold rounded-full flex items-center gap-1">
                           <Award className="w-4 h-4" />
@@ -473,6 +528,23 @@ export default function Rewards() {
                         <span className="px-3 py-1 bg-primary-100 text-primary-700 font-semibold rounded-full flex items-center gap-1">
                           <Star className="w-4 h-4" />
                           {reward.pointsCost.toLocaleString('es-CL')} puntos
+                        </span>
+                      )}
+
+                      {/* Mostrar stock */}
+                      {reward.stock !== null && reward.stock !== undefined ? (
+                        <span className={`px-3 py-1 font-semibold rounded-full ${
+                          reward.stock > 10
+                            ? 'bg-green-100 text-green-700'
+                            : reward.stock > 0
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          Stock: {reward.stock}
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-gray-100 text-gray-600 font-medium rounded-full">
+                          Stock ilimitado
                         </span>
                       )}
                     </div>

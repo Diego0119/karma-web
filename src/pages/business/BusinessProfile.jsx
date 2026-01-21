@@ -38,7 +38,7 @@ export default function BusinessProfile() {
     } catch (error) {
       // Si es 404, significa que no tiene negocio todavía
       if (error.response?.status !== 404) {
-        console.error('Error loading business:', error);
+        
       }
     } finally {
       setLoading(false);

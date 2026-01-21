@@ -16,7 +16,7 @@ export default function SubscriptionStatus() {
       const { data } = await api.get('/subscription');
       setSubscription(data);
     } catch (error) {
-      console.error('Error fetching subscription:', error);
+      
     } finally {
       setLoading(false);
     }

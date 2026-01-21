@@ -34,7 +34,7 @@ export default function AdminUsers() {
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (error) {
-      console.error('Error loading users:', error);
+      
       setError(error.response?.data?.message || 'Error al cargar usuarios');
     } finally {
       setLoading(false);

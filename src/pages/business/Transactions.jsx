@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '../../services/api';
 import {
   Receipt,
@@ -20,7 +20,6 @@ export default function Transactions() {
   const [business, setBusiness] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
@@ -48,9 +47,60 @@ export default function Transactions() {
     }
   }, [business]);
 
-  useEffect(() => {
-    filterTransactions();
-  }, [selectedCustomer, selectedType, searchTerm, dateFrom, dateTo, allTransactions]);
+  // Memoized filtered transactions
+  const filteredTransactions = useMemo(() => {
+    let filtered = [...allTransactions];
+
+    if (selectedCustomer !== 'all') {
+      filtered = filtered.filter(t => t.customer?.id === selectedCustomer);
+    }
+
+    if (selectedType !== 'all') {
+      switch (selectedType) {
+        case 'POINTS_EARN':
+          filtered = filtered.filter(t => t.type === 'POINTS' && t.action === 'EARN');
+          break;
+        case 'POINTS_REDEEM':
+          filtered = filtered.filter(t => t.type === 'POINTS' && t.action === 'REDEEM');
+          break;
+        case 'STAMPS_EARN':
+          filtered = filtered.filter(t => t.type === 'STAMPS' && t.action === 'EARN');
+          break;
+        case 'STAMPS_REDEEM':
+          filtered = filtered.filter(t => t.type === 'STAMPS' && t.action === 'REDEEM');
+          break;
+        case 'POINTS':
+          filtered = filtered.filter(t => t.type === 'POINTS');
+          break;
+        case 'STAMPS':
+          filtered = filtered.filter(t => t.type === 'STAMPS');
+          break;
+      }
+    }
+
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.description?.toLowerCase().includes(search) ||
+        t.customer?.firstName?.toLowerCase().includes(search) ||
+        t.customer?.lastName?.toLowerCase().includes(search)
+      );
+    }
+
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(t => new Date(t.createdAt) >= fromDate);
+    }
+
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(t => new Date(t.createdAt) <= toDate);
+    }
+
+    return filtered;
+  }, [allTransactions, selectedCustomer, selectedType, searchTerm, dateFrom, dateTo]);
 
   const loadBusinessData = async () => {
     try {
@@ -58,7 +108,6 @@ export default function Transactions() {
 
       // Validar que el usuario tenga un negocio asociado
       if (!res.data || !res.data.id) {
-        console.warn('No business profile found for this user');
         setBusiness(null);
         setLoading(false);
         return;
@@ -66,8 +115,6 @@ export default function Transactions() {
 
       setBusiness(res.data);
     } catch (error) {
-      console.error('Error loading business:', error);
-
       // Si es 404, significa que no tiene perfil de negocio
       if (error.response?.status === 404) {
         setBusiness(null);
@@ -83,12 +130,12 @@ export default function Transactions() {
 
       // Cargar clientes del negocio
       const customersRes = await api.get('/business/my/customers');
-      setCustomers(customersRes.data);
+      const customersData = customersRes.data.data || customersRes.data || [];
+      setCustomers(customersData);
 
       // Si no hay clientes, no hay transacciones
-      if (!customersRes.data || customersRes.data.length === 0) {
+      if (!customersData || customersData.length === 0) {
         setAllTransactions([]);
-        setFilteredTransactions([]);
         setStats({
           totalEarned: 0,
           totalRedeemed: 0,
@@ -101,13 +148,10 @@ export default function Transactions() {
       }
 
       // Cargar transacciones unificadas (puntos y sellos) de todos los clientes
-      const transactionsPromises = customersRes.data.map(customer =>
+      const transactionsPromises = customersData.map(customer =>
         api.get(`/analytics/transactions/${customer.id}?type=ALL`)
           .then(res => res.data.map(t => ({ ...t, customer })))
-          .catch(err => {
-            console.error(`Error loading transactions for customer ${customer.id}:`, err);
-            return [];
-          })
+          .catch(() => [])
       );
 
       const transactionsArrays = await Promise.all(transactionsPromises);
@@ -117,7 +161,6 @@ export default function Transactions() {
       transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       setAllTransactions(transactions);
-      setFilteredTransactions(transactions);
 
       // Calcular estadísticas
       const pointsEarned = transactions
@@ -143,11 +186,9 @@ export default function Transactions() {
         stampsEarned,
         stampsRedeemed
       });
-    } catch (error) {
-      console.error('Error loading transactions:', error);
+    } catch {
       // Set empty data on error
       setAllTransactions([]);
-      setFilteredTransactions([]);
       setStats({
         totalEarned: 0,
         totalRedeemed: 0,
@@ -158,61 +199,6 @@ export default function Transactions() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterTransactions = () => {
-    let filtered = [...allTransactions];
-
-    if (selectedCustomer !== 'all') {
-      filtered = filtered.filter(t => t.customer?.id === selectedCustomer);
-    }
-
-    if (selectedType !== 'all') {
-      // Filtros combinados de tipo + acción
-      switch (selectedType) {
-        case 'POINTS_EARN':
-          filtered = filtered.filter(t => t.type === 'POINTS' && t.action === 'EARN');
-          break;
-        case 'POINTS_REDEEM':
-          filtered = filtered.filter(t => t.type === 'POINTS' && t.action === 'REDEEM');
-          break;
-        case 'STAMPS_EARN':
-          filtered = filtered.filter(t => t.type === 'STAMPS' && t.action === 'EARN');
-          break;
-        case 'STAMPS_REDEEM':
-          filtered = filtered.filter(t => t.type === 'STAMPS' && t.action === 'REDEEM');
-          break;
-        case 'POINTS':
-          filtered = filtered.filter(t => t.type === 'POINTS');
-          break;
-        case 'STAMPS':
-          filtered = filtered.filter(t => t.type === 'STAMPS');
-          break;
-      }
-    }
-
-    if (searchTerm) {
-      filtered = filtered.filter(t =>
-        t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.customer?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.customer?.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filtrar por rango de fechas
-    if (dateFrom) {
-      const fromDate = new Date(dateFrom);
-      fromDate.setHours(0, 0, 0, 0);
-      filtered = filtered.filter(t => new Date(t.createdAt) >= fromDate);
-    }
-
-    if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(t => new Date(t.createdAt) <= toDate);
-    }
-
-    setFilteredTransactions(filtered);
   };
 
   const formatDate = (dateString) => {

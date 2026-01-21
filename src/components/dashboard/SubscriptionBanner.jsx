@@ -14,12 +14,8 @@ export default function SubscriptionBanner() {
   const loadSubscription = async () => {
     try {
       const { data } = await api.get('/subscription');
-      console.log('📊 Subscription data loaded:', data);
       setSubscription(data);
     } catch (error) {
-      console.error('❌ Error loading subscription:', error);
-      console.error('Status:', error.response?.status);
-      console.error('Response:', error.response?.data);
       // Si es 404, no hay subscripción - esto es normal para negocios nuevos
       if (error.response?.status === 404) {
         setSubscription(null);

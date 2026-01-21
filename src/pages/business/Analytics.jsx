@@ -44,7 +44,7 @@ export default function Analytics() {
       setProgramsStats(programsRes.data);
       setPromotionsStats(promotionsRes.data);
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      
     } finally {
       setLoading(false);
     }

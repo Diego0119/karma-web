@@ -20,7 +20,7 @@ export default function RequireActiveSubscription({ children }) {
       const { data } = await api.get('/subscription');
       setSubscription(data);
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      
       setSubscription(null);
     } finally {
       setLoading(false);

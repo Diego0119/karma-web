@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   CreditCard,
@@ -25,6 +25,7 @@ import {
 import api from '../../services/api';
 import jsPDF from 'jspdf';
 import { formatCLP, formatDate } from '../../utils/formatters';
+import { PRICING } from '../../constants/pricing';
 
 export default function Billing() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,6 +38,16 @@ export default function Billing() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [reactivateLoading, setReactivateLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const messageTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Manejar redirección desde 403 (trial expirado)
   useEffect(() => {
@@ -66,7 +77,6 @@ export default function Billing() {
       setSubscription(subRes.data);
       setInvoices(invoicesRes.data);
     } catch (error) {
-      console.error('Error loading subscription:', error);
       setError(error.response?.data?.message || 'Error al cargar datos de facturación');
     } finally {
       setLoading(false);
@@ -85,14 +95,13 @@ export default function Billing() {
       setMessage({ type: 'success', text: data.message });
       await loadSubscriptionData();
     } catch (error) {
-      console.error('Error cancelling subscription:', error);
       setMessage({
         type: 'error',
         text: error.response?.data?.message || 'Error al cancelar subscripción'
       });
     } finally {
       setCancelLoading(false);
-      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+      messageTimeoutRef.current = setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     }
   };
 
@@ -100,18 +109,13 @@ export default function Billing() {
     try {
       setReactivateLoading(true);
 
-      console.log('🔄 Iniciando proceso de pago con Flow...');
-
       // Crear sesión de checkout en Flow
       const { data } = await api.post('/subscription/create-checkout', {
         plan: 'PRO'
       });
 
-      console.log('✅ Checkout creado:', data);
-
       // Redirigir al usuario a Flow para completar el pago
       if (data.checkoutUrl) {
-        console.log('↗️ Redirigiendo a Flow:', data.checkoutUrl);
         // Guardar sessionId en localStorage para verificar después
         localStorage.setItem('pendingCheckoutSession', data.sessionId);
         // Redirigir a Flow
@@ -120,13 +124,12 @@ export default function Billing() {
         throw new Error('No se recibió URL de checkout');
       }
     } catch (error) {
-      console.error('❌ Error al crear checkout:', error);
       setReactivateLoading(false);
       setMessage({
         type: 'error',
         text: error.response?.data?.message || 'Error al iniciar el proceso de pago. Por favor intenta nuevamente.'
       });
-      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+      messageTimeoutRef.current = setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     }
     // No setear loading a false aquí porque el usuario será redirigido
   };
@@ -261,7 +264,7 @@ export default function Billing() {
     doc.text('TOTAL PAGADO:', 25, startY + lineHeight * 6 + 10);
 
     // Monto en CLP - Precio fijo según el plan
-    const montoCLP = invoice.plan === 'PRO' ? 24990 : 0;
+    const montoCLP = invoice.plan === 'PRO' ? PRICING.PRO.price : 0;
     doc.setFontSize(18);
     doc.setTextColor(...primaryColor);
     doc.text(formatCLP(montoCLP) + ' + IVA', pageWidth - 25, startY + lineHeight * 6 + 10, { align: 'right' });
@@ -338,7 +341,7 @@ export default function Billing() {
 
   const currentPlan = {
     name: 'Karma',
-    price: 24990,
+    price: PRICING.PRO.price,
     billingCycle: 'monthly',
     nextBillingDate: subscription?.expiresAt,
     features: getPlanFeatures(),
@@ -455,7 +458,7 @@ export default function Billing() {
                     Reactivando...
                   </>
                 ) : (
-                  'Reactivar Subscripción - $24.990/mes + IVA'
+                  `Reactivar Subscripción - ${PRICING.PRO.formattedWithTax}`
                 )}
               </button>
             </div>
@@ -527,7 +530,7 @@ export default function Billing() {
                         Procesando...
                       </>
                     ) : currentPlan.status === 'TRIAL' ? (
-                      'Activar Plan PRO - $24.990/mes + IVA'
+                      `Activar Plan PRO - ${PRICING.PRO.formattedWithTax}`
                     ) : (
                       'Reactivar Subscripción'
                     )}
@@ -577,8 +580,8 @@ export default function Billing() {
             <div className="mt-6 pt-6 border-t border-primary-200">
               <h3 className="font-semibold text-gray-900 mb-3">Características incluidas:</h3>
               <ul className="grid md:grid-cols-2 gap-2">
-                {currentPlan.features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
+                {currentPlan.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm text-gray-700">
                     <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
                     {feature}
                   </li>

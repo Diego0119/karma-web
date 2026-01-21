@@ -33,7 +33,7 @@ export default function AdminCustomers() {
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (error) {
-      console.error('Error loading customers:', error);
+      
       setError(error.response?.data?.message || 'Error al cargar clientes');
     } finally {
       setLoading(false);

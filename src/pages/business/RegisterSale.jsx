@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ShoppingCart, User, Star, Award, AlertCircle, CheckCircle, Calculator, HelpCircle, QrCode, X, Camera } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, User, Star, Award, AlertCircle, CheckCircle, Calculator, HelpCircle, QrCode, X, Camera, Gift, Ticket } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import api from '../../services/api';
 import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.jsx';
@@ -10,14 +10,34 @@ export default function RegisterSale() {
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [customer, setCustomer] = useState(null);
   const [customerCards, setCustomerCards] = useState([]);
+  const [availableRewards, setAvailableRewards] = useState([]);
+  const [customerPoints, setCustomerPoints] = useState(0);
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [calculatedPoints, setCalculatedPoints] = useState(0);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [redeemingReward, setRedeemingReward] = useState(null);
+  const [redemptionCode, setRedemptionCode] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showScanner, setShowScanner] = useState(false);
   const [scanner, setScanner] = useState(null);
   const [lastScannedQR, setLastScannedQR] = useState(null);
+  const [enrollmentDialog, setEnrollmentDialog] = useState({
+    show: false,
+    customerId: null,
+    customerName: '',
+    qrCode: ''
+  });
+  const clearCustomerTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clearCustomerTimeoutRef.current) {
+        clearTimeout(clearCustomerTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (business) {
@@ -40,7 +60,7 @@ export default function RegisterSale() {
     }
     return () => {
       if (scanner) {
-        scanner.clear().catch(err => console.error('Error clearing scanner:', err));
+        scanner.clear().catch(() => {});
       }
     };
   }, [showScanner]);
@@ -57,8 +77,6 @@ export default function RegisterSale() {
       // Si es 404, significa que no hay programas todavía
       if (error.response?.status === 404) {
         setPrograms([]);
-      } else {
-        console.error('Error loading programs:', error);
       }
     }
   };
@@ -79,8 +97,6 @@ export default function RegisterSale() {
   };
 
   const onScanSuccess = async (decodedText) => {
-    console.log('QR escaneado:', decodedText);
-
     // Detener el escáner
     if (scanner) {
       scanner.clear();
@@ -131,19 +147,142 @@ export default function RegisterSale() {
         type: 'success',
         text: `Cliente ${customerData.firstName} ${customerData.lastName} identificado`
       });
+
+      // Cargar recompensas disponibles del cliente
+      await loadAvailableRewards(customerData.id);
     } catch (error) {
-      console.error('Error loading customer:', error);
+      let errorMessage = 'No se pudo cargar la información del cliente';
+
+      if (error.response?.status === 404) {
+        errorMessage = 'Cliente no registrado en el sistema';
+      } else if (error.response?.status === 403) {
+        // Cliente no está inscrito - mostrar diálogo para inscribir
+        const customerData = error.response?.data?.customer;
+        if (customerData) {
+          setEnrollmentDialog({
+            show: true,
+            customerId: customerData.id,
+            customerName: `${customerData.firstName} ${customerData.lastName}`,
+            qrCode: qrCode
+          });
+          setLoading(false);
+          return; // No mostrar error, mostrar diálogo
+        }
+        errorMessage = 'Este cliente no está inscrito en tu negocio.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
       setMessage({
         type: 'error',
-        text: error.response?.status === 404
-          ? 'Cliente no registrado en el sistema'
-          : 'No se pudo cargar la información del cliente'
+        text: errorMessage
       });
       setCustomer(null);
       setCustomerCards([]);
+      setAvailableRewards([]);
       setLastScannedQR(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEnrollCustomer = async () => {
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      // Inscribir al cliente en el negocio
+      await api.post('/enrollments', {
+        customerId: enrollmentDialog.customerId,
+        businessId: business.id
+      });
+
+      setMessage({
+        type: 'success',
+        text: `Cliente ${enrollmentDialog.customerName} inscrito exitosamente`
+      });
+
+      // Cerrar el diálogo
+      setEnrollmentDialog({
+        show: false,
+        customerId: null,
+        customerName: '',
+        qrCode: ''
+      });
+
+      // Reintentar cargar la información del cliente
+      await loadCustomerInfo(enrollmentDialog.qrCode);
+
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Error al inscribir al cliente'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAvailableRewards = async (customerId) => {
+    try {
+      const response = await api.get(`/loyalty/customer/${customerId}/available-rewards`, {
+        params: { businessId: business.id }
+      });
+
+      setAvailableRewards(response.data.rewards || []);
+      setCustomerPoints(response.data.customerPoints || 0);
+    } catch {
+      setAvailableRewards([]);
+      setCustomerPoints(0);
+    }
+  };
+
+  const handleRedeemReward = async (reward) => {
+    if (!confirm(`¿Canjear "${reward.name}" por ${reward.pointsRequired} puntos?`)) {
+      return;
+    }
+
+    setRedeemingReward(reward.id);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await api.post('/loyalty/redeem', {
+        customerId: customer.id,
+        rewardId: reward.id,
+        businessId: business.id
+      });
+
+      setRedemptionCode(response.data.redemption.redemptionCode);
+      setMessage({
+        type: 'success',
+        text: `✅ Recompensa "${reward.name}" canjeada exitosamente`
+      });
+
+      // Recargar recompensas disponibles
+      await loadAvailableRewards(customer.id);
+
+      // Recargar info del cliente si hay QR guardado
+      if (lastScannedQR) {
+        await loadCustomerInfo(lastScannedQR);
+      }
+    } catch (error) {
+      const errorData = error.response?.data;
+      let errorMessage = 'Error al canjear la recompensa';
+
+      if (errorData?.message === 'Insufficient points') {
+        errorMessage = `Puntos insuficientes. Necesita ${errorData.required} puntos pero tiene ${errorData.current}`;
+      } else if (errorData?.message === 'Reward out of stock') {
+        errorMessage = 'Esta recompensa no tiene stock disponible';
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+
+      setMessage({
+        type: 'error',
+        text: errorMessage
+      });
+    } finally {
+      setRedeemingReward(null);
     }
   };
 
@@ -225,7 +364,7 @@ export default function RegisterSale() {
       setDescription('');
 
       // Opcional: limpiar cliente después de unos segundos
-      setTimeout(() => {
+      clearCustomerTimeoutRef.current = setTimeout(() => {
         setCustomer(null);
         setCustomerCards([]);
         setPurchaseAmount('');
@@ -245,9 +384,12 @@ export default function RegisterSale() {
   const resetCustomer = () => {
     setCustomer(null);
     setCustomerCards([]);
+    setAvailableRewards([]);
+    setCustomerPoints(0);
     setPurchaseAmount('');
     setCalculatedPoints(0);
     setMessage({ type: '', text: '' });
+    setRedemptionCode(null);
     setLastScannedQR(null);
   };
 
@@ -456,6 +598,123 @@ export default function RegisterSale() {
                   )}
                 </div>
 
+                {/* Modal de código de canje */}
+                {redemptionCode && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                      <div className="text-center">
+                        <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-100 mb-4">
+                          <CheckCircle className="w-12 h-12 text-green-600" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          ¡Recompensa Canjeada!
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                          Entrega el producto al cliente
+                        </p>
+
+                        <div className="bg-gradient-to-br from-primary-50 to-accent-50 border-2 border-primary-200 rounded-xl p-6 mb-6">
+                          <p className="text-sm text-gray-600 mb-2">Código de canje:</p>
+                          <p className="text-3xl font-mono font-bold text-primary-600">
+                            {redemptionCode}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => setRedemptionCode(null)}
+                          className="w-full bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recompensas disponibles */}
+                {availableRewards.length > 0 && (
+                  <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <Gift className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900">Recompensas Disponibles</h3>
+                          <p className="text-sm text-gray-600">
+                            El cliente tiene {customerPoints.toLocaleString('es-CL')} puntos
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {availableRewards.map((reward) => (
+                        <div
+                          key={reward.id}
+                          className={`bg-white rounded-lg p-4 border-2 transition-all ${
+                            reward.canRedeem
+                              ? 'border-green-200 hover:border-green-300'
+                              : 'border-gray-200 opacity-75'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-bold text-gray-900">{reward.name}</h4>
+                                {reward.stock !== null && reward.stock !== undefined && (
+                                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                                    reward.stock > 10
+                                      ? 'bg-green-100 text-green-700'
+                                      : reward.stock > 0
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    Stock: {reward.stock}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{reward.description}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-primary-600">
+                                  {reward.pointsRequired.toLocaleString('es-CL')} puntos
+                                </span>
+                                {!reward.canRedeem && (
+                                  <span className="text-xs text-red-600">
+                                    (Faltan {(reward.pointsRequired - customerPoints).toLocaleString('es-CL')} puntos)
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => handleRedeemReward(reward)}
+                              disabled={!reward.canRedeem || redeemingReward === reward.id || reward.stock === 0}
+                              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                                reward.canRedeem && reward.stock !== 0
+                                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg hover:scale-105'
+                                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              }`}
+                            >
+                              {redeemingReward === reward.id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                  Canjeando...
+                                </>
+                              ) : (
+                                <>
+                                  <Ticket className="w-4 h-4" />
+                                  Canjear
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Purchase Amount Question (only for POINTS) */}
                 {selectedProgram?.type === 'POINTS' && (
                   <>
@@ -556,6 +815,61 @@ export default function RegisterSale() {
             )}
           </div>
         </>
+      )}
+
+      {/* Enrollment Dialog */}
+      {enrollmentDialog.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-yellow-100 rounded-full">
+                <AlertCircle className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Cliente no inscrito</h3>
+                <p className="text-sm text-gray-600">Este cliente aún no está registrado en tu negocio</p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-900 mb-2">
+                <span className="font-semibold">{enrollmentDialog.customerName}</span> necesita inscribirse en tu negocio antes de acumular puntos o sellos.
+              </p>
+              <p className="text-xs text-blue-700">
+                La inscripción es gratuita y solo toma un segundo.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEnrollmentDialog({
+                  show: false,
+                  customerId: null,
+                  customerName: '',
+                  qrCode: ''
+                })}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-all"
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEnrollCustomer}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Inscribiendo...
+                  </div>
+                ) : (
+                  'Inscribir cliente'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

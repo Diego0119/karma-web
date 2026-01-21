@@ -49,7 +49,7 @@ export default function CardCustomization() {
         }
       }
     } catch (error) {
-      console.error('Error loading business:', error);
+      
     } finally {
       setLoading(false);
     }

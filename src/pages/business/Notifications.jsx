@@ -86,7 +86,7 @@ export default function Notifications() {
       const res = await api.get('/notifications/history');
       setNotificationHistory(res.data);
     } catch (error) {
-      console.error('Error loading notification history:', error);
+      
     } finally {
       setLoadingHistory(false);
     }
@@ -97,7 +97,7 @@ export default function Notifications() {
       const res = await api.get('/notifications/stats');
       setStats(res.data);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      
     }
   };
 

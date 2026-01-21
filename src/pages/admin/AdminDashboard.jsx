@@ -35,7 +35,6 @@ export default function AdminDashboard() {
       setStats(statsRes.data);
       setExpiringBusinesses(expiringRes.data);
     } catch (error) {
-      console.error('Error loading admin dashboard:', error);
       setError(error.response?.data?.message || 'Error al cargar datos');
     } finally {
       setLoading(false);
@@ -66,6 +65,7 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
+      id: 'users',
       title: 'Total Usuarios',
       value: stats?.users?.total || 0,
       icon: Users,
@@ -73,6 +73,7 @@ export default function AdminDashboard() {
       link: '/admin/users'
     },
     {
+      id: 'businesses',
       title: 'Total Negocios',
       value: stats?.businesses?.total || 0,
       icon: Building2,
@@ -81,6 +82,7 @@ export default function AdminDashboard() {
       subtitle: `${stats?.businesses?.active || 0} activos`
     },
     {
+      id: 'customers',
       title: 'Total Clientes',
       value: stats?.customers?.total || 0,
       icon: UserCircle,
@@ -88,6 +90,7 @@ export default function AdminDashboard() {
       link: '/admin/customers'
     },
     {
+      id: 'programs',
       title: 'Programas de Lealtad',
       value: stats?.programs?.total || 0,
       icon: Award,
@@ -105,7 +108,7 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, index) => {
+        {statCards.map((stat) => {
           const Icon = stat.icon;
           const CardContent = (
             <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
@@ -125,11 +128,11 @@ export default function AdminDashboard() {
           );
 
           return stat.link ? (
-            <Link key={index} to={stat.link}>
+            <Link key={stat.id} to={stat.link}>
               {CardContent}
             </Link>
           ) : (
-            <div key={index}>{CardContent}</div>
+            <div key={stat.id}>{CardContent}</div>
           );
         })}
       </div>
@@ -239,7 +242,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
         <QuickActionCard
           title="Gestionar Negocios"
           description="Ver y administrar todos los negocios"
@@ -253,13 +256,6 @@ export default function AdminDashboard() {
           icon={Users}
           link="/admin/users"
           color="from-blue-500 to-cyan-600"
-        />
-        <QuickActionCard
-          title="Actividad Reciente"
-          description="Monitorear actividad del sistema"
-          icon={Clock}
-          link="/admin/activity"
-          color="from-green-500 to-emerald-600"
         />
       </div>
     </div>

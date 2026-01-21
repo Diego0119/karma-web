@@ -14,11 +14,10 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // NO redirigir si el 401 viene de /auth/profile (es la verificación inicial)
-    const isAuthProfileCheck = error.config?.url?.includes('/auth/profile');
+    // NO redirigir si el 401 viene de rutas de autenticación
+    const isAuthRoute = error.config?.url?.includes('/auth/');
 
-    if (error.response?.status === 401 && !isAuthProfileCheck) {
-      localStorage.removeItem('user');
+    if (error.response?.status === 401 && !isAuthRoute) {
       window.location.href = '/login';
     }
 
@@ -32,10 +31,7 @@ api.interceptors.response.use(
         errorData?.message?.toLowerCase().includes('trial');
 
       if (isSubscriptionExpired) {
-        console.warn('🚫 Subscription expired, redirecting to billing...');
         window.location.href = '/dashboard/billing?expired=true';
-      } else {
-        console.warn('⚠️ 403 Forbidden (not subscription related):', errorData?.message);
       }
     }
 

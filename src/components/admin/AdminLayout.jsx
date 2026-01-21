@@ -9,10 +9,9 @@ import {
   Users,
   Building2,
   UserCircle,
-  BarChart3,
-  Clock,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  CreditCard
 } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
@@ -44,7 +43,7 @@ export default function AdminLayout({ children }) {
     {
       section: 'Monitoreo',
       items: [
-        { name: 'Actividad Reciente', href: '/admin/activity', icon: Clock },
+        { name: 'Transacciones', href: '/admin/transactions', icon: CreditCard },
         { name: 'Por Vencer', href: '/admin/expiring', icon: AlertCircle }
       ]
     }

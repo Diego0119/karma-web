@@ -38,7 +38,7 @@ export function useBusinessAuth() {
 
       // Validar que el usuario tenga un negocio asociado
       if (!res.data || !res.data.id) {
-        console.warn('No business profile found for this user');
+        
         setError('no_business');
         setBusiness(null);
         setLoading(false);
@@ -48,7 +48,6 @@ export function useBusinessAuth() {
       // Validar que el negocio pertenezca al usuario autenticado
       // El backend debe asegurar esto, pero validamos por seguridad
       if (res.data.userId && res.data.userId !== user.id) {
-        console.error('SECURITY ALERT: Business does not belong to authenticated user');
         setError('forbidden');
         setBusiness(null);
         setLoading(false);
@@ -59,8 +58,6 @@ export function useBusinessAuth() {
       setBusiness(res.data);
       setLoading(false);
     } catch (error) {
-      console.error('Error loading business:', error);
-
       // Si es 404, significa que no tiene perfil de negocio
       if (error.response?.status === 404) {
         setError('no_business');

@@ -34,7 +34,7 @@ export default function Programs() {
       if (error.response?.status === 404) {
         setPrograms([]);
       } else {
-        console.error('Error loading programs:', error);
+        
         setMessage({ type: 'error', text: 'Error al cargar los programas' });
       }
     } finally {

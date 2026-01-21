@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Award, CreditCard, Eye, Search, TrendingUp, Calendar } from 'lucide-react';
 import api from '../../services/api';
@@ -7,7 +7,6 @@ import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.
 export default function Customers() {
   const { business, loading: businessLoading, error: businessError } = useBusinessAuth();
   const [customers, setCustomers] = useState([]);
-  const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('lastActivity'); // 'lastActivity', 'points', 'name'
@@ -18,31 +17,29 @@ export default function Customers() {
     }
   }, [business]);
 
-  useEffect(() => {
-    filterAndSortCustomers();
-  }, [searchTerm, sortBy, customers]);
-
   const loadCustomers = async () => {
     try {
       const res = await api.get('/business/my/customers');
-      setCustomers(res.data);
-      setFilteredCustomers(res.data);
-    } catch (error) {
-      console.error('Error loading customers:', error);
+      const customersData = res.data.data || res.data || [];
+      setCustomers(customersData);
+    } catch {
+      // Error loading customers
     } finally {
       setLoading(false);
     }
   };
 
-  const filterAndSortCustomers = () => {
+  // Memoized filtered and sorted customers
+  const filteredCustomers = useMemo(() => {
     let filtered = [...customers];
 
     // Filtrar por búsqueda
     if (searchTerm) {
+      const search = searchTerm.toLowerCase();
       filtered = filtered.filter(customer =>
-        customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.firstName.toLowerCase().includes(search) ||
+        customer.lastName.toLowerCase().includes(search) ||
+        customer.email.toLowerCase().includes(search) ||
         customer.phone.includes(searchTerm)
       );
     }
@@ -59,8 +56,14 @@ export default function Customers() {
       return 0;
     });
 
-    setFilteredCustomers(filtered);
-  };
+    return filtered;
+  }, [customers, searchTerm, sortBy]);
+
+  // Memoized stats
+  const stats = useMemo(() => ({
+    totalPoints: customers.reduce((sum, c) => sum + c.loyalty.points, 0),
+    totalStampCards: customers.reduce((sum, c) => sum + c.loyalty.activeStampCards, 0)
+  }), [customers]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('es-CL', {
@@ -125,7 +128,7 @@ export default function Customers() {
             <div className="flex-1">
               <p className="text-sm text-gray-600 mb-1">Puntos Totales</p>
               <p className="text-2xl font-bold text-gray-900">
-                {customers.reduce((sum, c) => sum + c.loyalty.points, 0).toLocaleString('es-CL')}
+                {stats.totalPoints.toLocaleString('es-CL')}
               </p>
             </div>
           </div>
@@ -139,7 +142,7 @@ export default function Customers() {
             <div className="flex-1">
               <p className="text-sm text-gray-600 mb-1">Tarjetas Activas</p>
               <p className="text-2xl font-bold text-gray-900">
-                {customers.reduce((sum, c) => sum + c.loyalty.activeStampCards, 0)}
+                {stats.totalStampCards}
               </p>
             </div>
           </div>

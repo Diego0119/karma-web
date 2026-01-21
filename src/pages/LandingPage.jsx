@@ -42,7 +42,7 @@ function LandingNavbar() {
                 Beneficios
               </a>
               <a href="#pricing" className="text-gray-700 hover:text-primary-600 transition-colors">
-                Precios
+                Precio
               </a>
               {isAuthenticated ? (
                 user?.role === 'BUSINESS' ? (
@@ -110,7 +110,7 @@ function LandingNavbar() {
               Beneficios
             </a>
             <a href="#pricing" className="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">
-              Precios
+              Precio
             </a>
             {isAuthenticated ? (
               user?.role === 'BUSINESS' ? (

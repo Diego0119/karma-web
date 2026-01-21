@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
@@ -8,24 +8,43 @@ export default function PaymentReturn() {
   const navigate = useNavigate();
   const [status, setStatus] = useState('processing'); // processing, success, failed, error
   const [message, setMessage] = useState('');
-  const token = searchParams.get('token');
+  const timeoutRef = useRef(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     processPaymentReturn();
+
+    return () => {
+      isMountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
+
+  const safeNavigate = (path, delay = 3000) => {
+    timeoutRef.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        navigate(path);
+      }
+    }, delay);
+  };
 
   const processPaymentReturn = async (retryCount = 0) => {
     try {
-      console.log('📥 Retorno de Flow recibido. Token:', token);
-      console.log('🔄 Intento:', retryCount + 1);
-
       // Esperar más tiempo si es un reintento (el webhook puede tardar)
       const waitTime = retryCount === 0 ? 3000 : 5000;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise(resolve => {
+        timeoutRef.current = setTimeout(resolve, waitTime);
+      });
+
+      if (!isMountedRef.current) return;
 
       // Verificar el estado de la suscripción
       const { data } = await api.get('/subscription');
-      console.log('📊 Estado de suscripción:', data);
+
+      if (!isMountedRef.current) return;
 
       // Limpiar sessionId pendiente
       const pendingSession = localStorage.getItem('pendingCheckoutSession');
@@ -37,48 +56,38 @@ export default function PaymentReturn() {
       if (data.plan === 'PRO' && data.status === 'ACTIVE') {
         setStatus('success');
         setMessage('¡Pago exitoso! Tu plan PRO ha sido activado.');
-        // Redirigir al dashboard después de 3 segundos
-        setTimeout(() => {
-          navigate('/dashboard?payment=success');
-        }, 3000);
+        safeNavigate('/dashboard?payment=success');
       } else if ((data.status === 'TRIAL' || data.status === 'EXPIRED') && retryCount < 2) {
         // El webhook puede estar tardando, reintentar
-        console.log('⏳ Webhook aún procesando, reintentando...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        return processPaymentReturn(retryCount + 1);
+        await new Promise(resolve => {
+          timeoutRef.current = setTimeout(resolve, 3000);
+        });
+        if (isMountedRef.current) {
+          return processPaymentReturn(retryCount + 1);
+        }
       } else if (data.status === 'TRIAL' || data.status === 'EXPIRED') {
         // Después de reintentos, el pago falló
         setStatus('failed');
         setMessage('El pago no se completó. Por favor intenta nuevamente.');
-        setTimeout(() => {
-          navigate('/dashboard/billing?payment=failed');
-        }, 3000);
+        safeNavigate('/dashboard/billing?payment=failed');
       } else {
         // Estado desconocido
         setStatus('error');
         setMessage('No se pudo verificar el estado del pago. Verifica tu suscripción en el dashboard.');
-        setTimeout(() => {
-          navigate('/dashboard/billing');
-        }, 3000);
+        safeNavigate('/dashboard/billing');
       }
     } catch (error) {
-      console.error('❌ Error al procesar retorno de pago:', error);
-      console.error('Error details:', error.response?.data);
-      console.error('Error status:', error.response?.status);
+      if (!isMountedRef.current) return;
 
       // Si es error 401, el usuario no está autenticado
       if (error.response?.status === 401) {
         setStatus('error');
         setMessage('Sesión expirada. Por favor inicia sesión nuevamente.');
-        setTimeout(() => {
-          navigate('/login?redirect=/dashboard/billing');
-        }, 3000);
+        safeNavigate('/login?redirect=/dashboard/billing');
       } else {
         setStatus('error');
         setMessage('Error al verificar el estado del pago. Por favor contacta a soporte.');
-        setTimeout(() => {
-          navigate('/dashboard/billing?payment=error');
-        }, 3000);
+        safeNavigate('/dashboard/billing?payment=error');
       }
     }
   };
@@ -166,13 +175,8 @@ export default function PaymentReturn() {
             <p className="text-gray-600 mb-4">{message}</p>
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
               <p className="text-sm text-amber-800">
-                Si realizaste el pago y ves este mensaje, por favor contacta a soporte con el código de transacción.
+                Si realizaste el pago y ves este mensaje, por favor contacta a soporte.
               </p>
-              {token && (
-                <p className="text-xs text-amber-700 mt-2 font-mono break-all">
-                  Token: {token}
-                </p>
-              )}
             </div>
             <button
               onClick={() => navigate('/dashboard')}
