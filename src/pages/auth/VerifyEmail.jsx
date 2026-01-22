@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, ArrowRight, Mail } from 'lucide-react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { checkAuth } = useAuth();
   const [status, setStatus] = useState('loading'); // loading, success, error
   const [errorMessage, setErrorMessage] = useState('');
+  const [countdown, setCountdown] = useState(3);
 
   const token = searchParams.get('token');
 
@@ -21,10 +24,31 @@ export default function VerifyEmail() {
     verifyEmail();
   }, [token]);
 
+  // Auto-redirect después de verificación exitosa
+  useEffect(() => {
+    if (status === 'success') {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            navigate('/onboarding');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [status, navigate]);
+
   const verifyEmail = async () => {
     try {
       await api.post('/auth/verify-email', { token });
       setStatus('success');
+
+      // Refrescar estado de autenticación
+      await checkAuth();
     } catch (error) {
       setStatus('error');
       const message = error.response?.data?.message || 'Error al verificar el email';
@@ -70,14 +94,19 @@ export default function VerifyEmail() {
               <h1 className="text-2xl font-bold text-gray-900 mb-3">
                 Email verificado
               </h1>
-              <p className="text-gray-600 mb-6">
-                Tu cuenta ha sido verificada exitosamente. Ya puedes iniciar sesión y comenzar a usar Karma.
+              <p className="text-gray-600 mb-4">
+                Tu cuenta ha sido verificada exitosamente. Ahora puedes continuar con la configuración de tu negocio.
               </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                <p className="text-sm text-blue-800">
+                  Redirigiendo en <strong>{countdown}</strong> segundos...
+                </p>
+              </div>
               <Link
-                to="/login"
+                to="/onboarding"
                 className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
               >
-                Iniciar sesión
+                Continuar ahora
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </>
