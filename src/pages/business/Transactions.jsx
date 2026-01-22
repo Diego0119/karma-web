@@ -201,8 +201,17 @@ export default function Transactions() {
     }
   };
 
+  // La base de datos guarda hora de Chile, pero el backend agrega 'Z' (UTC)
+  // Quitamos la Z para interpretar como hora local
+  const parseAsChileTime = (dateString) => {
+    if (!dateString) return new Date();
+    // Remover Z y cualquier offset de timezone para tratar como hora local
+    const cleanDate = dateString.replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
+    return new Date(cleanDate);
+  };
+
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = parseAsChileTime(dateString);
     return date.toLocaleDateString('es-CL', {
       year: 'numeric',
       month: 'short',
@@ -211,7 +220,7 @@ export default function Transactions() {
   };
 
   const formatTime = (dateString) => {
-    const date = new Date(dateString);
+    const date = parseAsChileTime(dateString);
     return date.toLocaleTimeString('es-CL', {
       hour: '2-digit',
       minute: '2-digit'

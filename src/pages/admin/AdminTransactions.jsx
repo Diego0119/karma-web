@@ -61,9 +61,17 @@ export default function AdminTransactions() {
     }).format(amount);
   };
 
+  // La base de datos guarda hora de Chile, pero el backend agrega 'Z' (UTC)
+  const parseAsChileTime = (dateString) => {
+    if (!dateString) return new Date();
+    const cleanDate = dateString.replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
+    return new Date(cleanDate);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('es-CL', {
+    const date = parseAsChileTime(dateString);
+    return date.toLocaleDateString('es-CL', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

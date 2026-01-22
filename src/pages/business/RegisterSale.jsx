@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, User, Star, Award, AlertCircle, CheckCircle, Calculator, HelpCircle, QrCode, X, Camera, Gift, Ticket, UserPlus } from 'lucide-react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import api from '../../services/api';
 import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.jsx';
 import ManualPointsModal from '../../components/business/ManualPointsModal';
@@ -56,16 +56,14 @@ export default function RegisterSale() {
     }
   }, [purchaseAmount, selectedProgram]);
 
+  // Cleanup scanner on unmount
   useEffect(() => {
-    if (showScanner && !scanner) {
-      initializeScanner();
-    }
     return () => {
       if (scanner) {
-        scanner.clear().catch(() => {});
+        scanner.stop().catch(() => {});
       }
     };
-  }, [showScanner]);
+  }, [scanner]);
 
   const loadPrograms = async () => {
     try {
@@ -83,36 +81,71 @@ export default function RegisterSale() {
     }
   };
 
-  const initializeScanner = () => {
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "qr-reader",
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
-      },
-      false
-    );
+  // Iniciar escáner desde click del usuario (requerido para Safari iOS)
+  const startScanner = async () => {
+    setShowScanner(true);
 
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
-    setScanner(html5QrcodeScanner);
+    // Esperar a que el elemento del DOM esté disponible
+    setTimeout(async () => {
+      try {
+        const html5Qrcode = new Html5Qrcode("qr-reader");
+
+        await html5Qrcode.start(
+          { facingMode: "environment" }, // Cámara trasera
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
+          async (decodedText) => {
+            // Éxito: detener escáner y procesar
+            try {
+              await html5Qrcode.stop();
+              setScanner(null);
+              setShowScanner(false);
+              await loadCustomerInfo(decodedText);
+            } catch (stopError) {
+              console.error('Error stopping scanner:', stopError);
+            }
+          },
+          (errorMessage) => {
+            // Ignorar errores de escaneo continuo (no encontró QR en este frame)
+          }
+        );
+
+        setScanner(html5Qrcode);
+      } catch (err) {
+        console.error('Error starting scanner:', err);
+        setShowScanner(false);
+
+        // Mostrar mensaje de error específico
+        let errorMsg = 'No se pudo acceder a la cámara';
+        if (err.message?.includes('Permission')) {
+          errorMsg = 'Permiso de cámara denegado. Por favor permite el acceso a la cámara en la configuración de tu navegador.';
+        } else if (err.message?.includes('NotFound')) {
+          errorMsg = 'No se encontró una cámara en este dispositivo.';
+        } else if (err.message?.includes('NotAllowed')) {
+          errorMsg = 'Acceso a la cámara no permitido. Revisa los permisos del navegador.';
+        }
+
+        setMessage({
+          type: 'error',
+          text: errorMsg
+        });
+      }
+    }, 100);
   };
 
-  const onScanSuccess = async (decodedText) => {
-    // Detener el escáner
+  const stopScanner = async () => {
     if (scanner) {
-      scanner.clear();
+      try {
+        await scanner.stop();
+      } catch (err) {
+        console.error('Error stopping scanner:', err);
+      }
       setScanner(null);
     }
     setShowScanner(false);
-
-    // Cargar información del cliente
-    await loadCustomerInfo(decodedText);
-  };
-
-  const onScanError = (error) => {
-    // Ignorar errores de escaneo continuo
-    // console.warn('QR scan error:', error);
   };
 
   const loadCustomerInfo = async (qrCode) => {
@@ -522,7 +555,7 @@ export default function RegisterSale() {
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <button
                       type="button"
-                      onClick={() => setShowScanner(true)}
+                      onClick={startScanner}
                       className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
                     >
                       <Camera className="w-6 h-6" />
@@ -547,19 +580,16 @@ export default function RegisterSale() {
                       <h4 className="font-semibold text-gray-900">Escaneando...</h4>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (scanner) {
-                            scanner.clear();
-                            setScanner(null);
-                          }
-                          setShowScanner(false);
-                        }}
+                        onClick={stopScanner}
                         className="text-gray-600 hover:text-red-600"
                       >
                         <X className="w-6 h-6" />
                       </button>
                     </div>
-                    <div id="qr-reader" className="rounded-lg overflow-hidden border-2 border-primary-300"></div>
+                    <div id="qr-reader" className="rounded-lg overflow-hidden border-2 border-primary-300" style={{ minHeight: '300px' }}></div>
+                    <p className="text-sm text-gray-500 mt-3 text-center">
+                      Apunta la cámara al código QR del cliente
+                    </p>
                   </div>
                 )}
               </div>
