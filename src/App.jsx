@@ -19,6 +19,8 @@ const Login = lazy(() => import('./pages/auth/Login'));
 const Register = lazy(() => import('./pages/auth/Register'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+const VerifyEmailPending = lazy(() => import('./pages/auth/VerifyEmailPending'));
+const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
 const JoinBusiness = lazy(() => import('./pages/public/JoinBusiness'));
 const JoinSuccess = lazy(() => import('./pages/public/JoinSuccess'));
@@ -135,6 +137,8 @@ function App() {
           <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/join/:businessQrCode" element={<JoinBusiness />} />
           <Route path="/join-success" element={<JoinSuccess />} />
 

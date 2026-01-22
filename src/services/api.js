@@ -21,9 +21,19 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
 
-    // Manejar 403 (Forbidden) - Solo redirigir si es por subscripción expirada
+    // Manejar 403 (Forbidden)
     if (error.response?.status === 403) {
       const errorData = error.response?.data;
+
+      // Verificar si es error de email no verificado
+      if (errorData?.code === 'EMAIL_NOT_VERIFIED') {
+        const isAlreadyOnVerify = window.location.pathname.includes('/verify-email');
+        if (!isAlreadyOnVerify) {
+          window.location.href = '/verify-email-pending';
+        }
+        return Promise.reject(error);
+      }
+
       // Solo redirigir si el mensaje indica que es por subscripción expirada
       const isSubscriptionExpired =
         errorData?.code === 'SUBSCRIPTION_EXPIRED' ||

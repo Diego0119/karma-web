@@ -37,12 +37,31 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/login', { email, password });
       const { user: userData } = response.data;
 
+      // Verificar si es BUSINESS y no ha verificado email
+      if (userData.role === 'BUSINESS' && !userData.isEmailVerified) {
+        // No guardar en estado, redirigir a verificación
+        return {
+          success: false,
+          requiresEmailVerification: true,
+          error: 'Debes verificar tu email antes de continuar'
+        };
+      }
+
       // Solo guardar en estado, la cookie httpOnly maneja la sesión
       setUser(userData);
 
       return { success: true };
     } catch (error) {
       let errorMessage = 'Error al iniciar sesión';
+
+      // Verificar si es error de email no verificado
+      if (error.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        return {
+          success: false,
+          requiresEmailVerification: true,
+          error: 'Debes verificar tu email antes de continuar'
+        };
+      }
 
       if (error.response?.data?.message) {
         const msg = error.response.data.message;
@@ -64,10 +83,19 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/register', { email, password, role });
       const { user: userData } = response.data;
 
-      // Solo guardar en estado, la cookie httpOnly maneja la sesión
+      // Paso 2: Si es BUSINESS, requiere verificación de email
+      if (role === 'BUSINESS') {
+        // No guardar en estado hasta que verifique email
+        return {
+          success: true,
+          requiresEmailVerification: true
+        };
+      }
+
+      // Para otros roles, guardar en estado
       setUser(userData);
 
-      // Paso 2: Si es BUSINESS y tiene businessName, crear perfil del negocio automáticamente
+      // Paso 3: Si es BUSINESS y tiene businessName, crear perfil del negocio automáticamente
       if (role === 'BUSINESS' && businessName) {
         try {
           await api.post('/business', {

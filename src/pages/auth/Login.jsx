@@ -20,6 +20,9 @@ export default function Login() {
 
     if (result.success) {
       navigate('/dashboard');
+    } else if (result.requiresEmailVerification) {
+      // Redirigir a página de verificación pendiente
+      navigate('/verify-email-pending');
     } else {
       setError(result.error);
     }

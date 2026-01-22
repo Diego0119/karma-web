@@ -37,7 +37,12 @@ export default function Register() {
     const result = await register(email, password, 'BUSINESS', businessName.trim());
 
     if (result.success) {
-      navigate('/onboarding');
+      // Si requiere verificación de email, redirigir a página de verificación
+      if (result.requiresEmailVerification) {
+        navigate('/verify-email-pending');
+      } else {
+        navigate('/onboarding');
+      }
     } else {
       setError(result.error);
     }
