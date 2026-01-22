@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import api from '../../services/api';
 
 export default function SubscriptionBanner() {
@@ -63,7 +62,7 @@ export default function SubscriptionBanner() {
             <h3 className="font-semibold text-amber-900 mb-1">
               Tu período de prueba termina pronto
             </h3>
-            <p className="text-amber-700 text-sm mb-3">
+            <p className="text-amber-700 text-sm">
               Te quedan <strong>{daysRemaining} día{daysRemaining !== 1 ? 's' : ''}</strong> de prueba gratuita.
               Vence el {expirationDate?.toLocaleDateString('es-CL', {
                 day: 'numeric',
@@ -71,12 +70,6 @@ export default function SubscriptionBanner() {
                 year: 'numeric'
               })}.
             </p>
-            <Link
-              to="/dashboard/billing"
-              className="inline-flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
-            >
-              Activar subscripción
-            </Link>
           </div>
         </div>
       </div>
@@ -93,20 +86,14 @@ export default function SubscriptionBanner() {
             <h3 className="font-semibold text-gray-900 mb-1">
               Subscripción cancelada
             </h3>
-            <p className="text-gray-700 text-sm mb-3">
+            <p className="text-gray-700 text-sm">
               Tu subscripción ha sido cancelada. Mantendrás acceso hasta el{' '}
               {expirationDate?.toLocaleDateString('es-CL', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric'
-              })}.
+              })}. Contacta a soporte si deseas reactivarla.
             </p>
-            <Link
-              to="/dashboard/billing"
-              className="inline-flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
-            >
-              Reactivar subscripción
-            </Link>
           </div>
         </div>
       </div>

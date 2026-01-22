@@ -78,7 +78,7 @@ export default function CustomerDashboard() {
             Para comenzar, completa tu perfil
           </p>
           <Link
-            to="/dashboard/profile"
+            to="/customer/profile"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
             <Plus className="w-5 h-5" />
@@ -95,21 +95,21 @@ export default function CustomerDashboard() {
       value: stats.cards,
       icon: CreditCard,
       color: 'from-blue-500 to-cyan-500',
-      link: '/dashboard/cards'
+      link: '/customer/cards'
     },
     {
       title: 'Puntos Totales',
       value: stats.points,
       icon: Award,
       color: 'from-purple-500 to-pink-500',
-      link: '/dashboard/points'
+      link: '/customer/points'
     },
     {
       title: 'Recompensas Canjeadas',
       value: stats.rewards,
       icon: Gift,
       color: 'from-orange-500 to-red-500',
-      link: '/dashboard/my-rewards'
+      link: '/customer/my-rewards'
     },
   ];
 
@@ -118,28 +118,28 @@ export default function CustomerDashboard() {
       title: 'Explorar Negocios',
       description: 'Descubre negocios cerca de ti',
       icon: Store,
-      link: '/dashboard/businesses',
+      link: '/customer/businesses',
       color: 'from-blue-500 to-cyan-500'
     },
     {
       title: 'Mis Tarjetas',
       description: 'Ver mis tarjetas de sellos',
       icon: CreditCard,
-      link: '/dashboard/cards',
+      link: '/customer/cards',
       color: 'from-purple-500 to-pink-500'
     },
     {
       title: 'Mis Puntos',
       description: 'Ver balance de puntos',
       icon: Award,
-      link: '/dashboard/points',
+      link: '/customer/points',
       color: 'from-orange-500 to-red-500'
     },
     {
       title: 'Promociones',
       description: 'Ver promociones activas',
       icon: Tag,
-      link: '/dashboard/promotions',
+      link: '/customer/promotions',
       color: 'from-green-500 to-emerald-500'
     },
   ];
@@ -188,7 +188,7 @@ export default function CustomerDashboard() {
             <p className="text-gray-600">Información personal</p>
           </div>
           <Link
-            to="/dashboard/profile"
+            to="/customer/profile"
             className="text-primary-600 hover:text-primary-700 font-semibold text-sm flex items-center gap-1"
           >
             Editar

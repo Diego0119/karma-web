@@ -10,6 +10,7 @@ export default function Rewards() {
   const [showForm, setShowForm] = useState(false);
   const [editingReward, setEditingReward] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [pointsProgram, setPointsProgram] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -24,8 +25,23 @@ export default function Rewards() {
   useEffect(() => {
     if (business) {
       loadRewards();
+      loadPointsProgram();
     }
   }, [business]);
+
+  const loadPointsProgram = async () => {
+    try {
+      const res = await api.get('/loyalty/programs/my');
+      // Buscar el programa de puntos activo
+      const activePointsProgram = res.data.find(
+        (p) => p.type === 'POINTS' && p.isActive
+      );
+      setPointsProgram(activePointsProgram || null);
+    } catch (error) {
+      // Si no hay programas, simplemente no mostramos la conversión
+      setPointsProgram(null);
+    }
+  };
 
   const loadRewards = async () => {
     try {
@@ -361,6 +377,31 @@ export default function Rewards() {
                 <p className="text-sm text-gray-500 mt-1">
                   Cantidad de puntos que el cliente debe canjear para obtener esta recompensa
                 </p>
+
+                {/* Mostrar conversión del programa de puntos */}
+                {pointsProgram && pointsProgram.pointsConversionRate && formData.pointsCost > 0 && (
+                  <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      <strong>💡 Tu conversión actual:</strong> ${Math.round(pointsProgram.pointsConversionRate).toLocaleString('es-CL')} = 1 punto
+                    </p>
+                    <p className="text-sm text-blue-800 mt-2">
+                      📊 Para obtener esta recompensa, el cliente deberá gastar{' '}
+                      <strong className="text-blue-900">
+                        ${Math.round(parseInt(formData.pointsCost) * pointsProgram.pointsConversionRate).toLocaleString('es-CL')}
+                      </strong>
+                      {' '}en tu negocio.
+                    </p>
+                  </div>
+                )}
+
+                {/* Mostrar advertencia si no hay programa de puntos */}
+                {!pointsProgram && (
+                  <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ No tienes un programa de puntos activo. Crea uno en la sección "Programas" para que tus clientes puedan acumular puntos.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div>

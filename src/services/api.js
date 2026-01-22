@@ -30,7 +30,10 @@ api.interceptors.response.use(
         errorData?.message?.toLowerCase().includes('subscri') ||
         errorData?.message?.toLowerCase().includes('trial');
 
-      if (isSubscriptionExpired) {
+      // No redirigir si ya estamos en la página de billing (evita loop infinito)
+      const isAlreadyOnBilling = window.location.pathname.includes('/billing');
+
+      if (isSubscriptionExpired && !isAlreadyOnBilling) {
         window.location.href = '/dashboard/billing?expired=true';
       }
     }

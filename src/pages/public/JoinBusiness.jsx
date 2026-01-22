@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Store, Award, Star, Gift, AlertCircle, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Store, Award, Star, Gift, AlertCircle, Loader2, CheckCircle2, ArrowRight, Lock, Shield } from 'lucide-react';
 import api from '../../services/api';
 
 export default function JoinBusiness() {
@@ -16,8 +16,12 @@ export default function JoinBusiness() {
     firstName: '',
     lastName: '',
     phone: '',
-    birthDate: ''
+    birthDate: '',
+    pin: ''
   });
+  const [confirmPin, setConfirmPin] = useState('');
+  const pinInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+  const confirmPinInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
   useEffect(() => {
     loadBusinessInfo();
@@ -43,10 +47,59 @@ export default function JoinBusiness() {
     });
   };
 
+  // PIN input handlers
+  const handlePinChange = (index, value, isConfirm = false) => {
+    if (value && !/^\d$/.test(value)) return;
+
+    if (isConfirm) {
+      const newPin = confirmPin.split('');
+      newPin[index] = value;
+      setConfirmPin(newPin.join('').slice(0, 4));
+      if (value && index < 3) {
+        confirmPinInputRefs[index + 1].current?.focus();
+      }
+    } else {
+      const newPin = formData.pin.split('');
+      newPin[index] = value;
+      setFormData({ ...formData, pin: newPin.join('').slice(0, 4) });
+      if (value && index < 3) {
+        pinInputRefs[index + 1].current?.focus();
+      }
+    }
+  };
+
+  const handlePinKeyDown = (index, e, isConfirm = false) => {
+    const refs = isConfirm ? confirmPinInputRefs : pinInputRefs;
+    const currentPin = isConfirm ? confirmPin : formData.pin;
+
+    if (e.key === 'Backspace' && !currentPin[index] && index > 0) {
+      refs[index - 1].current?.focus();
+    }
+    if (e.key === 'ArrowLeft' && index > 0) {
+      refs[index - 1].current?.focus();
+    }
+    if (e.key === 'ArrowRight' && index < 3) {
+      refs[index + 1].current?.focus();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError('');
+
+    // Validar PIN
+    if (formData.pin.length !== 4) {
+      setError('Ingresa un PIN de 4 dígitos');
+      setSubmitting(false);
+      return;
+    }
+
+    if (formData.pin !== confirmPin) {
+      setError('Los PINs no coinciden');
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const res = await api.post(`/public/join/${businessQrCode}`, formData);
@@ -58,13 +111,24 @@ export default function JoinBusiness() {
       // Redirigir a página de éxito con datos
       navigate('/join-success', { state: res.data });
     } catch (error) {
-      
-      setError(
-        error.response?.data?.message ||
-        error.response?.status === 400 && error.response?.data?.message?.includes('email')
-          ? 'Este email ya está registrado. Por favor inicia sesión.'
-          : 'Error al registrarse. Por favor intenta nuevamente.'
-      );
+      console.error('Error en registro:', error.response?.data);
+
+      const errorData = error.response?.data;
+      let serverMessage = errorData?.message;
+
+      // Si message es un array, convertir a string
+      if (Array.isArray(serverMessage)) {
+        serverMessage = serverMessage.join('. ');
+      }
+
+      if (serverMessage?.toLowerCase().includes('email') &&
+          (serverMessage?.toLowerCase().includes('existe') || serverMessage?.toLowerCase().includes('already'))) {
+        setError('Este email ya está registrado. Por favor inicia sesión.');
+      } else if (serverMessage) {
+        setError(serverMessage);
+      } else {
+        setError('Error al registrarse. Por favor intenta nuevamente.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -147,7 +211,7 @@ export default function JoinBusiness() {
             <h3 className="text-2xl font-bold text-gray-900 text-center mb-6">
               Únete y disfruta de estos beneficios
             </h3>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className={`grid gap-6 ${programs.length === 1 ? 'max-w-md mx-auto' : 'md:grid-cols-2'}`}>
               {programs.map((program) => (
                 <div
                   key={program.id}
@@ -297,6 +361,82 @@ export default function JoinBusiness() {
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                 />
+              </div>
+            </div>
+
+            {/* PIN Section */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Lock className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">PIN de seguridad *</h4>
+                  <p className="text-sm text-gray-600">4 dígitos numéricos</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* PIN Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Crear PIN
+                  </label>
+                  <div className="flex gap-2 justify-center md:justify-start">
+                    {[0, 1, 2, 3].map((index) => (
+                      <input
+                        key={index}
+                        ref={pinInputRefs[index]}
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={formData.pin[index] || ''}
+                        onChange={(e) => handlePinChange(index, e.target.value, false)}
+                        onKeyDown={(e) => handlePinKeyDown(index, e, false)}
+                        className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                        disabled={submitting}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Confirm PIN Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirmar PIN
+                  </label>
+                  <div className="flex gap-2 justify-center md:justify-start">
+                    {[0, 1, 2, 3].map((index) => (
+                      <input
+                        key={index}
+                        ref={confirmPinInputRefs[index]}
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={confirmPin[index] || ''}
+                        onChange={(e) => handlePinChange(index, e.target.value, true)}
+                        onKeyDown={(e) => handlePinKeyDown(index, e, true)}
+                        className={`w-12 h-14 text-center text-xl font-bold border-2 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all ${
+                          confirmPin.length === 4 && formData.pin !== confirmPin
+                            ? 'border-red-300 bg-red-50'
+                            : confirmPin.length === 4 && formData.pin === confirmPin
+                            ? 'border-green-300 bg-green-50'
+                            : 'border-gray-300'
+                        }`}
+                        disabled={submitting}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* PIN explanation */}
+              <div className="mt-4 flex items-start gap-2">
+                <Shield className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-gray-600">
+                  Este PIN te permite acumular puntos cuando no puedas mostrar tu QR.
+                  Solo proporciona tu teléfono o email + PIN al negocio como método alternativo.
+                </p>
               </div>
             </div>
 

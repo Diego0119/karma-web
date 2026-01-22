@@ -77,22 +77,22 @@ export default function DashboardLayout({ children }) {
     {
       section: 'General',
       items: [
-        { name: 'Inicio', href: '/dashboard', icon: Home }
+        { name: 'Inicio', href: '/customer', icon: Home }
       ]
     },
     {
       section: 'Mi Programa',
       items: [
-        { name: 'Mis Tarjetas', href: '/dashboard/cards', icon: CreditCard },
-        { name: 'Mis Puntos', href: '/dashboard/points', icon: Award },
-        { name: 'Recompensas', href: '/dashboard/my-rewards', icon: Gift },
-        { name: 'Promociones', href: '/dashboard/promotions', icon: Tag }
+        { name: 'Mis Tarjetas', href: '/customer/cards', icon: CreditCard },
+        { name: 'Mis Puntos', href: '/customer/points', icon: Award },
+        { name: 'Recompensas', href: '/customer/my-rewards', icon: Gift },
+        { name: 'Promociones', href: '/customer/promotions', icon: Tag }
       ]
     },
     {
       section: 'Descubrir',
       items: [
-        { name: 'Negocios', href: '/dashboard/businesses', icon: Store }
+        { name: 'Negocios', href: '/customer/businesses', icon: Store }
       ]
     }
   ];
@@ -239,17 +239,19 @@ export default function DashboardLayout({ children }) {
                         <span className="text-sm text-gray-700">Configuración de cuenta</span>
                       </Link>
                     )}
-                    <Link
-                      to="/dashboard/billing"
-                      onClick={() => {
-                        setAccountMenuOpen(false);
-                        setSidebarOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                    >
-                      <FileText size={18} className="text-gray-600" />
-                      <span className="text-sm text-gray-700">Facturación</span>
-                    </Link>
+                                        {user?.role === 'BUSINESS' && (
+                      <Link
+                        to="/dashboard/billing"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          setSidebarOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        <FileText size={18} className="text-gray-600" />
+                        <span className="text-sm text-gray-700">Facturación</span>
+                      </Link>
+                    )}
                     <button
                       onClick={() => {
                         setAccountMenuOpen(false);

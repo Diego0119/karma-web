@@ -33,10 +33,10 @@ export default function Billing() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState(null);
   const [invoices, setInvoices] = useState([]);
+  const [business, setBusiness] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [reactivateLoading, setReactivateLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const messageTimeoutRef = useRef(null);
 
@@ -70,12 +70,14 @@ export default function Billing() {
   const loadSubscriptionData = async () => {
     try {
       setLoading(true);
-      const [subRes, invoicesRes] = await Promise.all([
+      const [subRes, invoicesRes, businessRes] = await Promise.all([
         api.get('/subscription'),
-        api.get('/subscription/invoices')
+        api.get('/subscription/invoices'),
+        api.get('/business/me')
       ]);
       setSubscription(subRes.data);
       setInvoices(invoicesRes.data);
+      setBusiness(businessRes.data);
     } catch (error) {
       setError(error.response?.data?.message || 'Error al cargar datos de facturación');
     } finally {
@@ -103,35 +105,6 @@ export default function Billing() {
       setCancelLoading(false);
       messageTimeoutRef.current = setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     }
-  };
-
-  const handleReactivateSubscription = async () => {
-    try {
-      setReactivateLoading(true);
-
-      // Crear sesión de checkout en Flow
-      const { data } = await api.post('/subscription/create-checkout', {
-        plan: 'PRO'
-      });
-
-      // Redirigir al usuario a Flow para completar el pago
-      if (data.checkoutUrl) {
-        // Guardar sessionId en localStorage para verificar después
-        localStorage.setItem('pendingCheckoutSession', data.sessionId);
-        // Redirigir a Flow
-        window.location.href = data.checkoutUrl;
-      } else {
-        throw new Error('No se recibió URL de checkout');
-      }
-    } catch (error) {
-      setReactivateLoading(false);
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.message || 'Error al iniciar el proceso de pago. Por favor intenta nuevamente.'
-      });
-      messageTimeoutRef.current = setTimeout(() => setMessage({ type: '', text: '' }), 5000);
-    }
-    // No setear loading a false aquí porque el usuario será redirigido
   };
 
   // Generar PDF del comprobante de pago
@@ -184,20 +157,16 @@ export default function Billing() {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text('Karma SpA', 20, 92);
-    doc.text('RUT: XX.XXX.XXX-X', 20, 98);
-    doc.text('contacto@karma.cl', 20, 104);
-    doc.text('Santiago, Chile', 20, 110);
+    doc.text('Karma', 20, 92);
 
-    // Información del cliente (se llenará con datos reales si están disponibles)
+    // Información del cliente
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.text('CLIENTE:', pageWidth / 2 + 10, 85);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text('Negocio Karma', pageWidth / 2 + 10, 92);
-    // TODO: Agregar datos reales del negocio cuando estén disponibles
+    doc.text(business?.name || 'Cliente', pageWidth / 2 + 10, 92);
 
     // Línea separadora
     doc.setDrawColor(...grayColor);
@@ -366,21 +335,19 @@ export default function Billing() {
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-6 py-4 font-medium transition-colors ${
-              activeTab === 'overview'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className={`px-6 py-4 font-medium transition-colors ${activeTab === 'overview'
+              ? 'text-primary-600 border-b-2 border-primary-600'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
           >
             Resumen
           </button>
           <button
             onClick={() => setActiveTab('invoices')}
-            className={`px-6 py-4 font-medium transition-colors ${
-              activeTab === 'invoices'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className={`px-6 py-4 font-medium transition-colors ${activeTab === 'invoices'
+              ? 'text-primary-600 border-b-2 border-primary-600'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
           >
             Facturas
           </button>
@@ -389,11 +356,10 @@ export default function Billing() {
 
       {/* Mensaje de éxito/error */}
       {message.text && (
-        <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
-          message.type === 'success'
-            ? 'bg-green-50 border border-green-200 text-green-700'
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
+        <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${message.type === 'success'
+          ? 'bg-green-50 border border-green-200 text-green-700'
+          : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
           {message.type === 'success' ? (
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           ) : (
@@ -405,17 +371,16 @@ export default function Billing() {
 
       {/* Alerta de Trial */}
       {currentPlan.status === 'TRIAL' && currentPlan.daysRemaining > 0 && (
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-blue-900">
-                Período de prueba - {currentPlan.daysRemaining} días restantes
+              <h3 className="font-semibold text-green-900">
+                Tu prueba gratis está activa
               </h3>
-              <p className="text-blue-700 text-sm">
-                Estás usando Karma en modo de prueba gratuita. Vence el{' '}
-                {new Date(currentPlan.nextBillingDate).toLocaleDateString('es-CL')}.
-                {currentPlan.daysRemaining <= 7 && ' ¡Activa tu subscripción pronto para no perder acceso!'}
+              <p className="text-green-700 text-sm">
+                Disfruta de todas las funcionalidades de Karma. Tu prueba vence el{' '}
+                {new Date(currentPlan.nextBillingDate).toLocaleDateString('es-CL')} ({currentPlan.daysRemaining} días restantes).
               </p>
             </div>
           </div>
@@ -444,23 +409,9 @@ export default function Billing() {
             <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold text-red-900">Subscripción expirada</h3>
-              <p className="text-red-700 text-sm mb-3">
-                Tu subscripción ha expirado. Reactiva tu cuenta para seguir usando Karma y acceder a tus clientes.
+              <p className="text-red-700 text-sm">
+                Tu período de prueba ha expirado. Contacta a soporte para activar tu cuenta.
               </p>
-              <button
-                onClick={handleReactivateSubscription}
-                disabled={reactivateLoading}
-                className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50"
-              >
-                {reactivateLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Reactivando...
-                  </>
-                ) : (
-                  `Reactivar Subscripción - ${PRICING.PRO.formattedWithTax}`
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -473,24 +424,11 @@ export default function Billing() {
             <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold text-yellow-900">Subscripción cancelada</h3>
-              <p className="text-yellow-700 text-sm mb-3">
+              <p className="text-yellow-700 text-sm">
                 Tu subscripción ha sido cancelada. Mantendrás acceso hasta{' '}
                 {new Date(currentPlan.nextBillingDate).toLocaleDateString('es-CL')}.
+                Contacta a soporte si deseas reactivarla.
               </p>
-              <button
-                onClick={handleReactivateSubscription}
-                disabled={reactivateLoading}
-                className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50"
-              >
-                {reactivateLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Reactivando...
-                  </>
-                ) : (
-                  'Reactivar Subscripción'
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -517,24 +455,18 @@ export default function Billing() {
                 </p>
               </div>
               <div>
-                {/* Si está en TRIAL o EXPIRED, mostrar botón de activar/reactivar */}
-                {(currentPlan.status === 'TRIAL' || currentPlan.status === 'EXPIRED') && (
-                  <button
-                    onClick={handleReactivateSubscription}
-                    disabled={reactivateLoading}
-                    className="px-6 py-3 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold disabled:opacity-50"
-                  >
-                    {reactivateLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-                        Procesando...
-                      </>
-                    ) : currentPlan.status === 'TRIAL' ? (
-                      `Activar Plan PRO - ${PRICING.PRO.formattedWithTax}`
-                    ) : (
-                      'Reactivar Subscripción'
-                    )}
-                  </button>
+                {/* Pagos temporalmente deshabilitados - mostrar badge */}
+                {currentPlan.status === 'TRIAL' && (
+                  <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium text-sm">
+                    Prueba gratis activa
+                  </span>
+                )}
+
+                {/* Si está EXPIRED, mostrar mensaje de contacto */}
+                {currentPlan.status === 'EXPIRED' && (
+                  <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg font-medium text-sm">
+                    Contacta soporte para activar
+                  </span>
                 )}
 
                 {/* Si está ACTIVE (pagando), mostrar botón de cancelar */}
@@ -630,13 +562,12 @@ export default function Billing() {
                       <span className="font-semibold text-gray-900">
                         ${invoice.amount.toLocaleString('es-CL')}
                       </span>
-                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                        invoice.status === 'PAID'
-                          ? 'bg-green-100 text-green-700'
-                          : invoice.status === 'PENDING'
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${invoice.status === 'PAID'
+                        ? 'bg-green-100 text-green-700'
+                        : invoice.status === 'PENDING'
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-red-100 text-red-700'
-                      }`}>
+                        }`}>
                         {invoice.status === 'PAID' ? 'Pagado' : invoice.status === 'PENDING' ? 'Pendiente' : 'Fallido'}
                       </span>
                       {invoice.status === 'PAID' && (
@@ -712,13 +643,12 @@ export default function Billing() {
                         </p>
                       </td>
                       <td className="py-4 px-4">
-                        <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                          invoice.status === 'PAID'
-                            ? 'bg-green-100 text-green-700'
-                            : invoice.status === 'PENDING'
+                        <span className={`px-3 py-1 text-sm font-medium rounded-full ${invoice.status === 'PAID'
+                          ? 'bg-green-100 text-green-700'
+                          : invoice.status === 'PENDING'
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'bg-red-100 text-red-700'
-                        }`}>
+                          }`}>
                           {invoice.status === 'PAID' ? 'Pagado' : invoice.status === 'PENDING' ? 'Pendiente' : 'Fallido'}
                         </span>
                       </td>

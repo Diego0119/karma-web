@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, User, Star, Award, AlertCircle, CheckCircle, Calculator, HelpCircle, QrCode, X, Camera, Gift, Ticket } from 'lucide-react';
+import { ShoppingCart, User, Star, Award, AlertCircle, CheckCircle, Calculator, HelpCircle, QrCode, X, Camera, Gift, Ticket, UserPlus } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import api from '../../services/api';
 import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.jsx';
+import ManualPointsModal from '../../components/business/ManualPointsModal';
 
 export default function RegisterSale() {
   const { business, loading: businessLoading, error: businessError } = useBusinessAuth();
@@ -28,6 +29,7 @@ export default function RegisterSale() {
     customerName: '',
     qrCode: ''
   });
+  const [showManualPointsModal, setShowManualPointsModal] = useState(false);
   const clearCustomerTimeoutRef = useRef(null);
 
   // Cleanup timeout on unmount
@@ -299,7 +301,7 @@ export default function RegisterSale() {
         if (selectedProgram.minimumPurchaseAmount && amount < selectedProgram.minimumPurchaseAmount) {
           setMessage({
             type: 'error',
-            text: `El monto mínimo de compra es $${selectedProgram.minimumPurchaseAmount.toLocaleString('es-CL')}`
+            text: `El monto mínimo de compra es $${Math.round(selectedProgram.minimumPurchaseAmount).toLocaleString('es-CL')}`
           });
           setLoading(false);
           return;
@@ -308,7 +310,7 @@ export default function RegisterSale() {
         await api.post('/loyalty/points/earn', {
           customerId: customer.id,
           purchaseAmount: amount,
-          description: description || `Compra de $${amount.toLocaleString('es-CL')}`
+          description: description || `Compra de $${Math.round(amount).toLocaleString('es-CL')}`
         });
 
         setMessage({
@@ -517,14 +519,28 @@ export default function RegisterSale() {
                 </div>
 
                 {!showScanner ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowScanner(true)}
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  >
-                    <Camera className="w-6 h-6" />
-                    Escanear QR
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowScanner(true)}
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+                    >
+                      <Camera className="w-6 h-6" />
+                      Escanear QR
+                    </button>
+
+                    {/* Manual Button - For POINTS and STAMPS programs */}
+                    {(selectedProgram?.type === 'POINTS' || selectedProgram?.type === 'STAMPS') && (
+                      <button
+                        type="button"
+                        onClick={() => setShowManualPointsModal(true)}
+                        className="inline-flex items-center gap-2 bg-white border-2 border-primary-600 text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-primary-50 hover:shadow-lg transition-all duration-200"
+                      >
+                        <UserPlus className="w-6 h-6" />
+                        {selectedProgram?.type === 'STAMPS' ? 'Sellos Manual' : 'Puntos Manual'}
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <div className="max-w-md mx-auto">
                     <div className="mb-4 flex items-center justify-between">
@@ -725,20 +741,23 @@ export default function RegisterSale() {
                       <div className="flex items-center gap-3">
                         <span className="text-2xl text-gray-700 font-bold">$</span>
                         <input
-                          type="number"
-                          value={purchaseAmount}
-                          onChange={(e) => setPurchaseAmount(e.target.value)}
+                          type="text"
+                          inputMode="numeric"
+                          value={purchaseAmount ? Number(purchaseAmount).toLocaleString('es-CL') : ''}
+                          onChange={(e) => {
+                            // Remover todo excepto números
+                            const rawValue = e.target.value.replace(/\D/g, '');
+                            setPurchaseAmount(rawValue);
+                          }}
                           className="flex-1 px-6 py-4 text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                           placeholder="0"
-                          min="0"
-                          step="0.01"
                           required
                           autoFocus
                         />
                       </div>
                       {selectedProgram.minimumPurchaseAmount > 0 && (
                         <p className="text-sm text-gray-500 mt-2">
-                          Monto mínimo: ${selectedProgram.minimumPurchaseAmount.toLocaleString('es-CL')}
+                          Monto mínimo: ${Math.round(selectedProgram.minimumPurchaseAmount).toLocaleString('es-CL')}
                         </p>
                       )}
                     </div>
@@ -761,7 +780,7 @@ export default function RegisterSale() {
                           <div className="text-right">
                             <p className="text-xs text-gray-600 mb-1">Cálculo</p>
                             <p className="text-sm font-mono text-gray-700 bg-white px-3 py-2 rounded-lg">
-                              ${Number(purchaseAmount).toLocaleString('es-CL')} ÷ ${Number(selectedProgram.pointsConversionRate).toLocaleString('es-CL')} = {calculatedPoints.toLocaleString('es-CL')}
+                              ${Number(purchaseAmount).toLocaleString('es-CL')} ÷ ${Math.round(selectedProgram.pointsConversionRate).toLocaleString('es-CL')} = {calculatedPoints.toLocaleString('es-CL')}
                             </p>
                           </div>
                         </div>
@@ -871,6 +890,24 @@ export default function RegisterSale() {
           </div>
         </div>
       )}
+
+      {/* Manual Points/Stamps Modal */}
+      <ManualPointsModal
+        isOpen={showManualPointsModal}
+        onClose={() => setShowManualPointsModal(false)}
+        program={selectedProgram}
+        onSuccess={(data) => {
+          const isStamps = selectedProgram?.type === 'STAMPS';
+          const value = isStamps
+            ? data.stampsEarned || data.stamps || 1
+            : data.pointsEarned || 0;
+          const label = isStamps ? 'sello(s)' : 'puntos';
+          setMessage({
+            type: 'success',
+            text: `✅ ${value.toLocaleString('es-CL')} ${label} otorgados exitosamente`
+          });
+        }}
+      />
     </div>
   );
 }
