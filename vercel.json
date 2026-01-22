@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+        {
+            "source": "/auth/:path*",
+            "destination": "https://karma-backend-production-9593.up.railway.app/auth/:path*"
+        },
+        {
+            "source": "/api/:path*",
+            "destination": "https://karma-backend-production-9593.up.railway.app/api/:path*"
+        }
+    ]
+}
