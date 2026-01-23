@@ -31,6 +31,7 @@ export default function RegisterSale() {
   });
   const [showManualPointsModal, setShowManualPointsModal] = useState(false);
   const clearCustomerTimeoutRef = useRef(null);
+  const isProcessingScanRef = useRef(false);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function RegisterSale() {
   // Iniciar escáner desde click del usuario (requerido para Safari iOS)
   const startScanner = async () => {
     setShowScanner(true);
+    isProcessingScanRef.current = false; // Reset flag
 
     // Esperar a que el elemento del DOM esté disponible
     setTimeout(async () => {
@@ -98,14 +100,26 @@ export default function RegisterSale() {
             aspectRatio: 1.0
           },
           async (decodedText) => {
+            // Prevenir múltiples procesamientos del mismo escaneo
+            if (isProcessingScanRef.current) return;
+            isProcessingScanRef.current = true;
+
             // Éxito: detener escáner y procesar
+            // Primero detener el escáner (ignorar errores)
             try {
               await html5Qrcode.stop();
-              setScanner(null);
-              setShowScanner(false);
-              await loadCustomerInfo(decodedText);
             } catch (stopError) {
               console.error('Error stopping scanner:', stopError);
+            }
+
+            setScanner(null);
+            setShowScanner(false);
+
+            // Cargar la info del cliente
+            try {
+              await loadCustomerInfo(decodedText);
+            } finally {
+              isProcessingScanRef.current = false;
             }
           },
           (errorMessage) => {
@@ -151,6 +165,7 @@ export default function RegisterSale() {
   const loadCustomerInfo = async (qrCode) => {
     try {
       setLoading(true);
+      setMessage({ type: '', text: '' });
 
       // Guardar el QR para recargas posteriores
       setLastScannedQR(qrCode);
@@ -159,28 +174,36 @@ export default function RegisterSale() {
       const scanRes = await api.post('/loyalty/scan', { qrCode });
 
       const { customer: customerData, programs: customerPrograms } = scanRes.data;
+
+      // Validar que tengamos datos del cliente
+      if (!customerData) {
+        throw new Error('No se recibieron datos del cliente');
+      }
+
       setCustomer(customerData);
 
       // Actualizar las tarjetas del cliente desde los programas escaneados
       const allCards = [];
-      customerPrograms.forEach(program => {
-        if (program.type === 'STAMPS' && program.stampCards) {
-          allCards.push(...program.stampCards.map(card => ({
-            ...card,
-            programId: program.id,
-            program: {
-              id: program.id,
-              name: program.name,
-              stampsRequired: card.stampsRequired
-            }
-          })));
-        }
-      });
+      if (customerPrograms && Array.isArray(customerPrograms)) {
+        customerPrograms.forEach(program => {
+          if (program?.type === 'STAMPS' && program?.stampCards && Array.isArray(program.stampCards)) {
+            allCards.push(...program.stampCards.map(card => ({
+              ...card,
+              programId: program.id,
+              program: {
+                id: program.id,
+                name: program.name,
+                stampsRequired: card.stampsRequired || program.stampsRequired
+              }
+            })));
+          }
+        });
+      }
       setCustomerCards(allCards);
 
       setMessage({
         type: 'success',
-        text: `Cliente ${customerData.firstName} ${customerData.lastName} identificado`
+        text: `Cliente ${customerData.firstName || ''} ${customerData.lastName || ''} identificado`
       });
 
       // Cargar recompensas disponibles del cliente
@@ -539,6 +562,21 @@ export default function RegisterSale() {
             {/* QR Scanner Section */}
             {!customer ? (
               <div className="text-center py-8">
+                {/* Loading state mientras busca el cliente */}
+                {loading ? (
+                  <div className="py-12">
+                    <div className="inline-flex p-6 bg-gradient-to-br from-primary-50 to-accent-50 rounded-2xl mb-4">
+                      <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600"></div>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      Buscando cliente...
+                    </h3>
+                    <p className="text-gray-600">
+                      Por favor espera mientras identificamos al cliente
+                    </p>
+                  </div>
+                ) : (
+                <>
                 <div className="mb-6">
                   <div className="inline-flex p-6 bg-gradient-to-br from-primary-50 to-accent-50 rounded-2xl mb-4">
                     <QrCode className="w-16 h-16 text-primary-600" />
@@ -592,6 +630,8 @@ export default function RegisterSale() {
                     </p>
                   </div>
                 )}
+                </>
+                )}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -605,7 +645,7 @@ export default function RegisterSale() {
                       <div>
                         <p className="text-sm text-gray-600">Cliente identificado</p>
                         <p className="text-xl font-bold text-gray-900">
-                          {customer.firstName} {customer.lastName}
+                          {customer?.firstName} {customer?.lastName}
                         </p>
                       </div>
                     </div>
