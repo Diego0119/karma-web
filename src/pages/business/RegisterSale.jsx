@@ -76,6 +76,7 @@ function RegisterSaleContent() {
   const [pendingQrCode, setPendingQrCode] = useState(null);
   const clearCustomerTimeoutRef = useRef(null);
   const isProcessingScanRef = useRef(false);
+  const scannerStoppedRef = useRef(false);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -104,7 +105,8 @@ function RegisterSaleContent() {
   // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
-      if (scanner) {
+      if (scanner && !scannerStoppedRef.current) {
+        scannerStoppedRef.current = true;
         scanner.stop().catch(() => {});
       }
     };
@@ -153,6 +155,7 @@ function RegisterSaleContent() {
     setShowScanner(true);
     setLoading(false);
     isProcessingScanRef.current = false;
+    scannerStoppedRef.current = false;
 
     // Esperar a que el elemento del DOM esté disponible
     setTimeout(async () => {
@@ -171,8 +174,11 @@ function RegisterSaleContent() {
             if (isProcessingScanRef.current) return;
             isProcessingScanRef.current = true;
 
-            // Detener escáner inmediatamente
-            html5Qrcode.stop().catch(console.error);
+            // Marcar como detenido ANTES de intentar detener
+            scannerStoppedRef.current = true;
+
+            // Detener escáner inmediatamente (ignorar errores)
+            html5Qrcode.stop().catch(() => {});
             setScanner(null);
             setShowScanner(false);
             setLoading(true);
@@ -203,11 +209,13 @@ function RegisterSaleContent() {
   };
 
   const stopScanner = async () => {
-    if (scanner) {
+    if (scanner && !scannerStoppedRef.current) {
+      scannerStoppedRef.current = true;
       try {
         await scanner.stop();
       } catch (err) {
-        console.error('Error stopping scanner:', err);
+        // Ignorar errores de "scanner not running"
+        console.log('Scanner stop (ignored):', err.message);
       }
       setScanner(null);
     }
