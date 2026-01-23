@@ -70,9 +70,20 @@ export default function RegisterSale() {
   // Procesar QR escaneado en useEffect separado (evita problemas con async en callback del scanner)
   useEffect(() => {
     if (pendingQrCode) {
+      console.log('[QR Scan] Processing QR code:', pendingQrCode);
       const processQr = async () => {
-        await loadCustomerInfo(pendingQrCode);
-        setPendingQrCode(null);
+        try {
+          await loadCustomerInfo(pendingQrCode);
+        } catch (err) {
+          console.error('[QR Scan] Error processing QR:', err);
+          setMessage({
+            type: 'error',
+            text: 'Error al procesar el código QR'
+          });
+          setLoading(false);
+        } finally {
+          setPendingQrCode(null);
+        }
       };
       processQr();
     }
@@ -161,6 +172,7 @@ export default function RegisterSale() {
   };
 
   const loadCustomerInfo = async (qrCode) => {
+    console.log('[loadCustomerInfo] Starting with QR:', qrCode);
     try {
       setLoading(true);
       setMessage({ type: '', text: '' });
@@ -169,7 +181,16 @@ export default function RegisterSale() {
       setLastScannedQR(qrCode);
 
       // Usar el nuevo endpoint de escaneo que retorna todo en una llamada
+      console.log('[loadCustomerInfo] Calling /loyalty/scan...');
       const scanRes = await api.post('/loyalty/scan', { qrCode });
+      console.log('[loadCustomerInfo] Full response:', scanRes);
+      console.log('[loadCustomerInfo] Response data:', JSON.stringify(scanRes.data, null, 2));
+
+      // Validar que la respuesta tenga la estructura esperada
+      if (!scanRes.data) {
+        console.error('[loadCustomerInfo] No data in response');
+        throw new Error('Respuesta vacía del servidor');
+      }
 
       const { customer: customerData, programs: customerPrograms } = scanRes.data;
 
@@ -178,6 +199,7 @@ export default function RegisterSale() {
         throw new Error('No se recibieron datos del cliente');
       }
 
+      console.log('[loadCustomerInfo] Setting customer:', customerData);
       setCustomer(customerData);
 
       // Actualizar las tarjetas del cliente desde los programas escaneados
@@ -199,14 +221,22 @@ export default function RegisterSale() {
       }
       setCustomerCards(allCards);
 
+      console.log('[loadCustomerInfo] Customer cards processed:', allCards);
+      console.log('[loadCustomerInfo] Customer set successfully, showing success message');
+
       setMessage({
         type: 'success',
         text: `Cliente ${customerData.firstName || ''} ${customerData.lastName || ''} identificado`
       });
 
       // Cargar recompensas disponibles del cliente
+      console.log('[loadCustomerInfo] Loading available rewards...');
       await loadAvailableRewards(customerData.id);
+      console.log('[loadCustomerInfo] Rewards loaded successfully');
     } catch (error) {
+      console.error('[loadCustomerInfo] Error:', error);
+      console.error('[loadCustomerInfo] Error response:', error.response?.data);
+
       let errorMessage = 'No se pudo cargar la información del cliente';
 
       if (error.response?.status === 404) {
@@ -215,6 +245,7 @@ export default function RegisterSale() {
         // Cliente no está inscrito - mostrar diálogo para inscribir
         const customerData = error.response?.data?.customer;
         if (customerData) {
+          console.log('[loadCustomerInfo] Showing enrollment dialog for:', customerData);
           setEnrollmentDialog({
             show: true,
             customerId: customerData.id,
@@ -238,6 +269,7 @@ export default function RegisterSale() {
       setAvailableRewards([]);
       setLastScannedQR(null);
     } finally {
+      console.log('[loadCustomerInfo] Finally block - setting loading to false');
       setLoading(false);
     }
   };
@@ -448,6 +480,18 @@ export default function RegisterSale() {
     setRedemptionCode(null);
     setLastScannedQR(null);
   };
+
+  // Debug: Log render state
+  console.log('[RegisterSale] Render state:', {
+    businessLoading,
+    hasCustomer: !!customer,
+    customerName: customer ? `${customer.firstName} ${customer.lastName}` : null,
+    loading,
+    showScanner,
+    pendingQrCode,
+    messageType: message.type,
+    programsCount: programs.length
+  });
 
   // Validación de negocio
   if (businessLoading) {
