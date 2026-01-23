@@ -30,6 +30,7 @@ export default function RegisterSale() {
     qrCode: ''
   });
   const [showManualPointsModal, setShowManualPointsModal] = useState(false);
+  const [pendingQrCode, setPendingQrCode] = useState(null);
   const clearCustomerTimeoutRef = useRef(null);
   const isProcessingScanRef = useRef(false);
 
@@ -66,6 +67,17 @@ export default function RegisterSale() {
     };
   }, [scanner]);
 
+  // Procesar QR escaneado en useEffect separado (evita problemas con async en callback del scanner)
+  useEffect(() => {
+    if (pendingQrCode) {
+      const processQr = async () => {
+        await loadCustomerInfo(pendingQrCode);
+        setPendingQrCode(null);
+      };
+      processQr();
+    }
+  }, [pendingQrCode]);
+
   const loadPrograms = async () => {
     try {
       const res = await api.get('/loyalty/programs/my');
@@ -85,7 +97,8 @@ export default function RegisterSale() {
   // Iniciar escáner desde click del usuario (requerido para Safari iOS)
   const startScanner = async () => {
     setShowScanner(true);
-    isProcessingScanRef.current = false; // Reset flag
+    setLoading(false);
+    isProcessingScanRef.current = false;
 
     // Esperar a que el elemento del DOM esté disponible
     setTimeout(async () => {
@@ -93,37 +106,28 @@ export default function RegisterSale() {
         const html5Qrcode = new Html5Qrcode("qr-reader");
 
         await html5Qrcode.start(
-          { facingMode: "environment" }, // Cámara trasera
+          { facingMode: "environment" },
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0
           },
-          async (decodedText) => {
-            // Prevenir múltiples procesamientos del mismo escaneo
+          (decodedText) => {
+            // Callback síncrono - solo guardar el QR y detener
             if (isProcessingScanRef.current) return;
             isProcessingScanRef.current = true;
 
-            // Éxito: detener escáner y procesar
-            // Primero detener el escáner (ignorar errores)
-            try {
-              await html5Qrcode.stop();
-            } catch (stopError) {
-              console.error('Error stopping scanner:', stopError);
-            }
-
+            // Detener escáner inmediatamente
+            html5Qrcode.stop().catch(console.error);
             setScanner(null);
             setShowScanner(false);
+            setLoading(true);
 
-            // Cargar la info del cliente
-            try {
-              await loadCustomerInfo(decodedText);
-            } finally {
-              isProcessingScanRef.current = false;
-            }
+            // Guardar QR para procesar en useEffect
+            setPendingQrCode(decodedText);
           },
-          (errorMessage) => {
-            // Ignorar errores de escaneo continuo (no encontró QR en este frame)
+          () => {
+            // Ignorar errores de frame sin QR
           }
         );
 
@@ -132,20 +136,14 @@ export default function RegisterSale() {
         console.error('Error starting scanner:', err);
         setShowScanner(false);
 
-        // Mostrar mensaje de error específico
         let errorMsg = 'No se pudo acceder a la cámara';
-        if (err.message?.includes('Permission')) {
-          errorMsg = 'Permiso de cámara denegado. Por favor permite el acceso a la cámara en la configuración de tu navegador.';
+        if (err.message?.includes('Permission') || err.message?.includes('NotAllowed')) {
+          errorMsg = 'Permiso de cámara denegado. Permite el acceso en configuración del navegador.';
         } else if (err.message?.includes('NotFound')) {
           errorMsg = 'No se encontró una cámara en este dispositivo.';
-        } else if (err.message?.includes('NotAllowed')) {
-          errorMsg = 'Acceso a la cámara no permitido. Revisa los permisos del navegador.';
         }
 
-        setMessage({
-          type: 'error',
-          text: errorMsg
-        });
+        setMessage({ type: 'error', text: errorMsg });
       }
     }, 100);
   };
