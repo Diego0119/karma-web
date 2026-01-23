@@ -17,8 +17,6 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('[ErrorBoundary] Caught error:', error);
-    console.error('[ErrorBoundary] Error info:', errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -115,12 +113,10 @@ function RegisterSaleContent() {
   // Procesar QR escaneado en useEffect separado (evita problemas con async en callback del scanner)
   useEffect(() => {
     if (pendingQrCode) {
-      console.log('[QR Scan] Processing QR code:', pendingQrCode);
       const processQr = async () => {
         try {
           await loadCustomerInfo(pendingQrCode);
         } catch (err) {
-          console.error('[QR Scan] Error processing QR:', err);
           setMessage({
             type: 'error',
             text: 'Error al procesar el código QR'
@@ -193,7 +189,6 @@ function RegisterSaleContent() {
 
         setScanner(html5Qrcode);
       } catch (err) {
-        console.error('Error starting scanner:', err);
         setShowScanner(false);
 
         let errorMsg = 'No se pudo acceder a la cámara';
@@ -213,9 +208,8 @@ function RegisterSaleContent() {
       scannerStoppedRef.current = true;
       try {
         await scanner.stop();
-      } catch (err) {
+      } catch {
         // Ignorar errores de "scanner not running"
-        console.log('Scanner stop (ignored):', err.message);
       }
       setScanner(null);
     }
@@ -223,7 +217,6 @@ function RegisterSaleContent() {
   };
 
   const loadCustomerInfo = async (qrCode) => {
-    console.log('[loadCustomerInfo] Starting with QR:', qrCode);
     try {
       setLoading(true);
       setMessage({ type: '', text: '' });
@@ -232,14 +225,10 @@ function RegisterSaleContent() {
       setLastScannedQR(qrCode);
 
       // Usar el nuevo endpoint de escaneo que retorna todo en una llamada
-      console.log('[loadCustomerInfo] Calling /loyalty/scan...');
       const scanRes = await api.post('/loyalty/scan', { qrCode });
-      console.log('[loadCustomerInfo] Full response:', scanRes);
-      console.log('[loadCustomerInfo] Response data:', JSON.stringify(scanRes.data, null, 2));
 
       // Validar que la respuesta tenga la estructura esperada
       if (!scanRes.data) {
-        console.error('[loadCustomerInfo] No data in response');
         throw new Error('Respuesta vacía del servidor');
       }
 
@@ -250,7 +239,6 @@ function RegisterSaleContent() {
         throw new Error('No se recibieron datos del cliente');
       }
 
-      console.log('[loadCustomerInfo] Setting customer:', customerData);
       setCustomer(customerData);
 
       // Actualizar las tarjetas del cliente desde los programas escaneados
@@ -272,22 +260,14 @@ function RegisterSaleContent() {
       }
       setCustomerCards(allCards);
 
-      console.log('[loadCustomerInfo] Customer cards processed:', allCards);
-      console.log('[loadCustomerInfo] Customer set successfully, showing success message');
-
       setMessage({
         type: 'success',
         text: `Cliente ${customerData.firstName || ''} ${customerData.lastName || ''} identificado`
       });
 
       // Cargar recompensas disponibles del cliente
-      console.log('[loadCustomerInfo] Loading available rewards...');
       await loadAvailableRewards(customerData.id);
-      console.log('[loadCustomerInfo] Rewards loaded successfully');
     } catch (error) {
-      console.error('[loadCustomerInfo] Error:', error);
-      console.error('[loadCustomerInfo] Error response:', error.response?.data);
-
       let errorMessage = 'No se pudo cargar la información del cliente';
 
       if (error.response?.status === 404) {
@@ -296,7 +276,6 @@ function RegisterSaleContent() {
         // Cliente no está inscrito - mostrar diálogo para inscribir
         const customerData = error.response?.data?.customer;
         if (customerData) {
-          console.log('[loadCustomerInfo] Showing enrollment dialog for:', customerData);
           setEnrollmentDialog({
             show: true,
             customerId: customerData.id,
@@ -320,7 +299,6 @@ function RegisterSaleContent() {
       setAvailableRewards([]);
       setLastScannedQR(null);
     } finally {
-      console.log('[loadCustomerInfo] Finally block - setting loading to false');
       setLoading(false);
     }
   };
@@ -531,26 +509,6 @@ function RegisterSaleContent() {
     setRedemptionCode(null);
     setLastScannedQR(null);
   };
-
-  // Debug: Log render state
-  console.log('[RegisterSale] Render state:', {
-    businessLoading,
-    hasCustomer: !!customer,
-    customerName: customer ? `${customer.firstName} ${customer.lastName}` : null,
-    loading,
-    showScanner,
-    pendingQrCode,
-    messageType: message.type,
-    programsCount: programs.length,
-    selectedProgramId: selectedProgram?.id,
-    selectedProgramType: selectedProgram?.type,
-    customerCardsCount: customerCards.length
-  });
-
-  // Log específico cuando customer cambia
-  if (customer) {
-    console.log('[RegisterSale] Customer is SET - should show form:', customer);
-  }
 
   // Validación de negocio
   if (businessLoading) {
