@@ -232,14 +232,14 @@ export default function CardCustomization() {
   }
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-7xl overflow-x-hidden">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Palette className="w-8 h-8 text-primary-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Personalización de Tarjeta</h1>
+          <Palette className="w-8 h-8 text-primary-600 flex-shrink-0" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Personalización</h1>
         </div>
-        <p className="text-gray-600">
-          Diseña tu tarjeta de fidelización digital para Apple Wallet y Google Wallet
+        <p className="text-gray-600 text-sm sm:text-base">
+          Diseña tu tarjeta digital para Apple Wallet y Google Wallet
         </p>
       </div>
 

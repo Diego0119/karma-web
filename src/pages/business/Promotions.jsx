@@ -244,23 +244,23 @@ export default function Promotions() {
   }
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl overflow-x-hidden">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
           <div className="flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-primary-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Promociones</h1>
+            <Sparkles className="w-8 h-8 text-primary-600 flex-shrink-0" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Promociones</h1>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 w-full sm:w-auto"
           >
             <Plus className="w-5 h-5" />
             {showForm ? 'Cancelar' : 'Nueva Promoción'}
           </button>
         </div>
-        <p className="text-gray-600">
-          Gestiona las promociones y ofertas especiales para tus clientes
+        <p className="text-gray-600 text-sm sm:text-base">
+          Gestiona las promociones y ofertas especiales
         </p>
       </div>
 
@@ -434,8 +434,8 @@ export default function Promotions() {
                 key={promotion.id}
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-primary-50 to-accent-50">
                       <Sparkles className="w-8 h-8 text-primary-600" />
                     </div>
@@ -455,25 +455,25 @@ export default function Promotions() {
 
                       <p className="text-gray-600 mb-3">{promotion.description}</p>
 
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-primary-600">
-                            {parseInt(promotion.discount)}% de descuento
+                            {parseInt(promotion.discount)}% dcto
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          <span>{formatDate(promotion.startDate)}</span>
+                        <div className="flex items-center gap-1 text-xs sm:text-sm">
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">{formatDate(promotion.startDate)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs sm:text-sm">
                           <span>→</span>
-                          <span>{formatDate(promotion.endDate)}</span>
+                          <span className="truncate">{formatDate(promotion.endDate)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-end sm:self-start">
                     <button
                       onClick={() => handleToggleActive(promotion)}
                       className="p-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-all"

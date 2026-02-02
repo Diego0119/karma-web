@@ -7,7 +7,6 @@ export default function JoinSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showQR, setShowQR] = useState(false);
-  const [loadingApple, setLoadingApple] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [error, setError] = useState('');
   const registrationData = location.state;
@@ -24,57 +23,47 @@ export default function JoinSuccess() {
     ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(customer.qrCode)}&size=300x300&margin=20`
     : '';
 
+  // Obtener el primer programa inscrito para generar el pase
+  const firstProgram = enrolledPrograms?.[0];
+
   // Función para agregar a Apple Wallet
-  const addToAppleWallet = async () => {
-    setError('');
-    setLoadingApple(true);
-
-    try {
-      const response = await api.get(`/wallet/apple/${customer.id}`, {
-        responseType: 'blob', // Importante: recibir como blob
-      });
-
-      // Crear URL del blob y descargar
-      const blob = new Blob([response.data], { type: 'application/vnd.apple.pkpass' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'karma-loyalty-card.pkpass';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      
-      setError(
-        err.response?.data?.message ||
-        'Error al generar la tarjeta de Apple Wallet. Por favor intenta nuevamente.'
-      );
-    } finally {
-      setLoadingApple(false);
+  const addToAppleWallet = () => {
+    if (!firstProgram) {
+      setError('No hay programas disponibles para generar la tarjeta');
+      return;
     }
+
+    setError('');
+    // Descarga directa - el navegador maneja el .pkpass automáticamente
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    window.location.href = `${apiUrl}/wallet/apple/${customer.id}/${firstProgram.programId}`;
   };
 
   // Función para agregar a Google Wallet
   const addToGoogleWallet = async () => {
+    if (!firstProgram) {
+      setError('No hay programas disponibles para generar la tarjeta');
+      return;
+    }
+
     setError('');
     setLoadingGoogle(true);
 
     try {
-      const response = await api.get(`/wallet/google/${customer.id}`);
+      const response = await api.get(`/wallet/google/${customer.id}/${firstProgram.programId}`);
 
       // Redirigir a la URL de Google Wallet
-      if (response.data.walletUrl) {
-        window.location.href = response.data.walletUrl;
+      if (response.data.saveUrl) {
+        window.open(response.data.saveUrl, '_blank');
       } else {
         throw new Error('URL de Google Wallet no disponible');
       }
     } catch (err) {
-      
       setError(
         err.response?.data?.message ||
         'Error al generar la tarjeta de Google Wallet. Por favor intenta nuevamente.'
       );
+    } finally {
       setLoadingGoogle(false);
     }
   };
@@ -242,25 +231,16 @@ export default function JoinSuccess() {
             <button
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               onClick={addToAppleWallet}
-              disabled={loadingApple || loadingGoogle}
+              disabled={loadingGoogle}
             >
-              {loadingApple ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  Generando...
-                </>
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Agregar a Apple Wallet
-                </>
-              )}
+              <Download className="w-5 h-5" />
+              Agregar a Apple Wallet
             </button>
 
             <button
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               onClick={addToGoogleWallet}
-              disabled={loadingApple || loadingGoogle}
+              disabled={loadingGoogle}
             >
               {loadingGoogle ? (
                 <>

@@ -163,14 +163,14 @@ export default function BusinessQR() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto overflow-x-hidden">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <QrCode className="w-8 h-8 text-primary-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Código QR de Inscripción</h1>
+          <QrCode className="w-8 h-8 text-primary-600 flex-shrink-0" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">QR de Inscripción</h1>
         </div>
-        <p className="text-gray-600">
-          Comparte este QR para que los clientes se inscriban en tus programas de fidelización
+        <p className="text-gray-600 text-sm sm:text-base">
+          Comparte este QR para que los clientes se inscriban en tus programas
         </p>
       </div>
 
@@ -229,17 +229,19 @@ export default function BusinessQR() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Vista Previa del Template</h3>
 
           {/* Scrollable Container */}
-          <div className="overflow-auto max-h-[800px] flex justify-center">
+          <div className="overflow-x-auto max-h-[800px]">
             {/* Template Component - Minimalist Design */}
             <div
               ref={templateRef}
+              className="mx-auto"
               style={{
-                width: '600px',
+                width: '100%',
+                maxWidth: '600px',
+                minWidth: '320px',
                 background: '#ffffff',
-                padding: '60px 50px',
+                padding: '40px 30px',
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 position: 'relative',
-                flexShrink: 0,
               }}
             >
               {/* Logo Karma - Simple */}
@@ -411,16 +413,16 @@ export default function BusinessQR() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               URL de inscripción
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 value={joinUrl}
                 readOnly
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono truncate min-w-0"
               />
               <button
                 onClick={handleCopyUrl}
-                className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all w-full sm:w-auto ${
                   copied
                     ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

@@ -233,23 +233,23 @@ export default function Rewards() {
   }
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl overflow-x-hidden">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
           <div className="flex items-center gap-3">
-            <Gift className="w-8 h-8 text-primary-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Recompensas</h1>
+            <Gift className="w-8 h-8 text-primary-600 flex-shrink-0" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Recompensas</h1>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 w-full sm:w-auto"
           >
             <Plus className="w-5 h-5" />
             {showForm ? 'Cancelar' : 'Nueva Recompensa'}
           </button>
         </div>
-        <p className="text-gray-600">
-          Gestiona las recompensas que los clientes pueden canjear con sus puntos o sellos
+        <p className="text-gray-600 text-sm sm:text-base">
+          Gestiona las recompensas que los clientes pueden canjear
         </p>
       </div>
 
@@ -539,8 +539,8 @@ export default function Rewards() {
               key={reward.id}
               className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4 flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-primary-50 to-accent-50">
                     <Gift className="w-8 h-8 text-primary-600" />
                   </div>
@@ -592,7 +592,7 @@ export default function Rewards() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-start">
                   <button
                     onClick={() => handleToggleActive(reward)}
                     className="p-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-all"
