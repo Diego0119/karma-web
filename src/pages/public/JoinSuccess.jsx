@@ -35,7 +35,7 @@ export default function JoinSuccess() {
 
     setError('');
     // Descarga directa - el navegador maneja el .pkpass automáticamente
-    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
     window.location.href = `${apiUrl}/wallet/apple/${customer.id}/${firstProgram.programId}`;
   };
 
