@@ -16,33 +16,33 @@ export default function JoinSuccess() {
     return <Navigate to="/" replace />;
   }
 
-  const { customer, enrolledPrograms } = registrationData;
+  const { customer, enrolledPrograms, business } = registrationData;
+
+  // Obtener businessId del negocio o del primer programa
+  const businessId = business?.id || enrolledPrograms?.[0]?.businessId;
 
   // URL para generar QR del cliente
   const customerQrImageUrl = customer.qrCode
     ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(customer.qrCode)}&size=300x300&margin=20`
     : '';
 
-  // Obtener el primer programa inscrito para generar el pase
-  const firstProgram = enrolledPrograms?.[0];
-
   // Función para agregar a Apple Wallet
   const addToAppleWallet = () => {
-    if (!firstProgram) {
-      setError('No hay programas disponibles para generar la tarjeta');
+    if (!businessId) {
+      setError('No se pudo obtener la información del negocio');
       return;
     }
 
     setError('');
     // Descarga directa - el navegador maneja el .pkpass automáticamente
     const apiUrl = import.meta.env.VITE_API_URL || '/api';
-    window.location.href = `${apiUrl}/wallet/apple/${customer.id}/${firstProgram.programId}`;
+    window.location.href = `${apiUrl}/wallet/apple/${customer.id}/${businessId}`;
   };
 
   // Función para agregar a Google Wallet
   const addToGoogleWallet = async () => {
-    if (!firstProgram) {
-      setError('No hay programas disponibles para generar la tarjeta');
+    if (!businessId) {
+      setError('No se pudo obtener la información del negocio');
       return;
     }
 
@@ -50,7 +50,7 @@ export default function JoinSuccess() {
     setLoadingGoogle(true);
 
     try {
-      const response = await api.get(`/wallet/google/${customer.id}/${firstProgram.programId}`);
+      const response = await api.get(`/wallet/google/${customer.id}/${businessId}`);
 
       // Redirigir a la URL de Google Wallet
       if (response.data.saveUrl) {

@@ -108,8 +108,13 @@ export default function JoinBusiness() {
       // Guardar datos del cliente para referencia local
       localStorage.setItem('customerQrCode', res.data.customer.qrCode);
 
-      // Redirigir a página de éxito con datos
-      navigate('/join-success', { state: res.data });
+      // Redirigir a página de éxito con datos (incluir business para wallet)
+      navigate('/join-success', {
+        state: {
+          ...res.data,
+          business: { id: business.id, name: business.name }
+        }
+      });
     } catch (error) {
       console.error('Error en registro:', error.response?.data);
 
