@@ -4,6 +4,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import api from '../../services/api';
 import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.jsx';
 import ManualPointsModal from '../../components/business/ManualPointsModal';
+import PageLoader from '../../components/common/PageLoader';
 
 // Error Boundary para capturar errores de render
 class ErrorBoundary extends Component {
@@ -512,11 +513,7 @@ function RegisterSaleContent() {
 
   // Validación de negocio
   if (businessLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <PageLoader message="Cargando..." />;
   }
 
   if (!business || businessError) {
@@ -867,8 +864,8 @@ function RegisterSaleContent() {
                       <label className="block text-lg font-semibold text-gray-900 mb-3">
                         ¿Cuánto compró {customer.firstName}?
                       </label>
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl text-gray-700 font-bold">$</span>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-xl sm:text-2xl text-gray-700 font-bold">$</span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -878,7 +875,7 @@ function RegisterSaleContent() {
                             const rawValue = e.target.value.replace(/\D/g, '');
                             setPurchaseAmount(rawValue);
                           }}
-                          className="flex-1 px-6 py-4 text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                          className="flex-1 min-w-0 px-3 sm:px-6 py-3 sm:py-4 text-lg sm:text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                           placeholder="0"
                           required
                           autoFocus
@@ -893,22 +890,22 @@ function RegisterSaleContent() {
 
                     {/* Calculated Points */}
                     {purchaseAmount && (
-                      <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="p-4 bg-white rounded-xl shadow-sm">
-                              <Calculator className="w-8 h-8 text-green-600" />
+                      <div className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-3 sm:p-4 bg-white rounded-xl shadow-sm">
+                              <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
                             </div>
                             <div>
                               <p className="text-sm text-gray-600">Puntos a otorgar</p>
-                              <p className="text-3xl font-bold text-gray-900">
-                                {calculatedPoints.toLocaleString('es-CL')} puntos
+                              <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+                                {calculatedPoints.toLocaleString('es-CL')} pts
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-left sm:text-right">
                             <p className="text-xs text-gray-600 mb-1">Cálculo</p>
-                            <p className="text-sm font-mono text-gray-700 bg-white px-3 py-2 rounded-lg">
+                            <p className="text-xs sm:text-sm font-mono text-gray-700 bg-white px-2 sm:px-3 py-2 rounded-lg break-all">
                               ${Number(purchaseAmount).toLocaleString('es-CL')} ÷ ${Math.round(selectedProgram.pointsConversionRate).toLocaleString('es-CL')} = {calculatedPoints.toLocaleString('es-CL')}
                             </p>
                           </div>

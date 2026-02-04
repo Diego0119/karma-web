@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, Award, CreditCard, Eye, Search, TrendingUp, Calendar } from 'lucide-react';
 import api from '../../services/api';
 import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.jsx';
+import PageLoader from '../../components/common/PageLoader';
 
 export default function Customers() {
   const { business, loading: businessLoading, error: businessError } = useBusinessAuth();
@@ -82,24 +83,12 @@ export default function Customers() {
   };
 
   // Validación de negocio
-  if (businessLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
+  if (businessLoading || loading) {
+    return <PageLoader message="Cargando clientes..." />;
   }
 
   if (!business || businessError) {
     return <NoBusinessMessage icon={Users} />;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
   }
 
   return (

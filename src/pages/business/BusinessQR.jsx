@@ -3,6 +3,7 @@ import { QrCode, Download, Copy, CheckCircle, AlertCircle, Printer, Share2, Gift
 import html2canvas from 'html2canvas';
 import api from '../../services/api';
 import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.jsx';
+import PageLoader from '../../components/common/PageLoader';
 
 export default function BusinessQR() {
   const { business, loading: businessLoading, error: businessError } = useBusinessAuth();
@@ -151,11 +152,7 @@ export default function BusinessQR() {
   };
 
   if (businessLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <PageLoader message="Cargando código QR..." />;
   }
 
   if (!business || businessError) {

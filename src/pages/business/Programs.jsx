@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, AlertCircle, CheckCircle, Star, Award, Edit2, Trash2, Info, HelpCircle } from 'lucide-react';
 import api from '../../services/api';
 import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.jsx';
+import PageLoader from '../../components/common/PageLoader';
 
 export default function Programs() {
   const { business, loading: businessLoading, error: businessError } = useBusinessAuth();
@@ -200,24 +201,12 @@ export default function Programs() {
   };
 
   // Validación de negocio
-  if (businessLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
+  if (businessLoading || loading) {
+    return <PageLoader message="Cargando programas..." />;
   }
 
   if (!business || businessError) {
     return <NoBusinessMessage icon={Award} />;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
   }
 
   return (

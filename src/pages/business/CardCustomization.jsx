@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Save, AlertCircle, CheckCircle, Palette, CreditCard, Upload, X, QrCode, Smartphone, Eye } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../../services/api';
+import PageLoader from '../../components/common/PageLoader';
 
 export default function CardCustomization() {
   const [business, setBusiness] = useState(null);
@@ -224,11 +225,7 @@ export default function CardCustomization() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <PageLoader message="Cargando personalización..." />;
   }
 
   return (
