@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Store, AlertCircle, Loader2, Download, QrCode, Lock, CreditCard, Search } from 'lucide-react';
 import api from '../../services/api';
@@ -20,10 +20,12 @@ export default function MyPass() {
   });
   const pinInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
-  // Cargar info del negocio si viene por QR
+  // Cargar info del negocio si viene por QR, o cargar todos los negocios
   useEffect(() => {
     if (businessQrCode) {
       loadBusinessInfo();
+    } else {
+      loadAllBusinesses();
     }
   }, [businessQrCode]);
 
@@ -41,24 +43,29 @@ export default function MyPass() {
     }
   };
 
-  // Buscar negocios
-  const searchBusinesses = async () => {
-    if (!searchTerm.trim()) return;
-
+  // Cargar todos los negocios
+  const loadAllBusinesses = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await api.get(`/public/businesses/search?q=${encodeURIComponent(searchTerm)}`);
+      const res = await api.get('/public/businesses');
       setBusinesses(res.data || []);
-      if (res.data?.length === 0) {
-        setError('No se encontraron negocios con ese nombre');
-      }
     } catch {
-      setError('Error al buscar negocios');
+      setError('Error al cargar negocios');
     } finally {
       setLoading(false);
     }
   };
+
+  // Filtrar negocios localmente
+  const filteredBusinesses = useMemo(() => {
+    if (!searchTerm.trim()) return businesses;
+    const search = searchTerm.toLowerCase();
+    return businesses.filter(b =>
+      b.name.toLowerCase().includes(search) ||
+      b.category?.toLowerCase().includes(search)
+    );
+  }, [businesses, searchTerm]);
 
   const handleSelectBusiness = (business) => {
     setSelectedBusiness(business);
@@ -183,27 +190,20 @@ export default function MyPass() {
                 <CreditCard className="w-8 h-8 text-primary-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Recuperar mi pase</h2>
-              <p className="text-gray-600">Busca el negocio del que quieres descargar tu pase</p>
+              <p className="text-gray-600">Selecciona el negocio del que quieres descargar tu pase</p>
             </div>
 
-            {/* Search */}
+            {/* Filter */}
             <div className="mb-6">
-              <div className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Nombre del negocio..."
+                  placeholder="Filtrar por nombre..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && searchBusinesses()}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 />
-                <button
-                  onClick={searchBusinesses}
-                  disabled={loading || !searchTerm.trim()}
-                  className="px-4 py-3 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-                </button>
               </div>
             </div>
 
@@ -214,11 +214,21 @@ export default function MyPass() {
               </div>
             )}
 
+            {/* Loading */}
+            {loading && (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">Cargando negocios...</p>
+              </div>
+            )}
+
             {/* Business List */}
-            {businesses.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-500 mb-2">{businesses.length} negocio(s) encontrado(s)</p>
-                {businesses.map((business) => (
+            {!loading && filteredBusinesses.length > 0 && (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                <p className="text-sm text-gray-500 mb-2">
+                  {filteredBusinesses.length} negocio{filteredBusinesses.length !== 1 ? 's' : ''} disponible{filteredBusinesses.length !== 1 ? 's' : ''}
+                </p>
+                {filteredBusinesses.map((business) => (
                   <button
                     key={business.id}
                     onClick={() => handleSelectBusiness(business)}
@@ -242,10 +252,25 @@ export default function MyPass() {
               </div>
             )}
 
+            {/* Empty State */}
+            {!loading && businesses.length > 0 && filteredBusinesses.length === 0 && (
+              <div className="text-center py-8">
+                <Store className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500">No se encontraron negocios con "{searchTerm}"</p>
+              </div>
+            )}
+
+            {!loading && businesses.length === 0 && !error && (
+              <div className="text-center py-8">
+                <Store className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500">No hay negocios disponibles</p>
+              </div>
+            )}
+
             {/* Info */}
-            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Tip:</strong> Si escaneaste el QR del negocio, serás redirigido directamente al formulario de verificación.
+                <strong>Tip:</strong> También puedes escanear el QR del negocio para ir directamente al formulario.
               </p>
             </div>
           </div>
