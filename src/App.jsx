@@ -24,6 +24,7 @@ const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
 const JoinBusiness = lazy(() => import('./pages/public/JoinBusiness'));
 const JoinSuccess = lazy(() => import('./pages/public/JoinSuccess'));
+const MyPass = lazy(() => import('./pages/public/MyPass'));
 const About = lazy(() => import('./pages/About'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
@@ -141,6 +142,8 @@ function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/join/:businessQrCode" element={<JoinBusiness />} />
           <Route path="/join-success" element={<JoinSuccess />} />
+          <Route path="/mi-pase" element={<MyPass />} />
+          <Route path="/mi-pase/:businessQrCode" element={<MyPass />} />
 
           {/* Payment Return - público (viene de Flow) */}
           <Route path="/payment/return" element={<PaymentReturn />} />

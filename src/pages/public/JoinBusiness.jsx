@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Store, Award, Star, Gift, AlertCircle, Loader2, CheckCircle2, ArrowRight, Lock, Shield } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Store, Award, Star, Gift, AlertCircle, Loader2, CheckCircle2, ArrowRight, Lock, Shield, Download, QrCode, UserCheck } from 'lucide-react';
 import api from '../../services/api';
 
 export default function JoinBusiness() {
@@ -10,6 +10,7 @@ export default function JoinBusiness() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [alreadyRegistered, setAlreadyRegistered] = useState(null); // Datos del usuario ya registrado
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -101,6 +102,13 @@ export default function JoinBusiness() {
     try {
       const res = await api.post(`/public/join/${businessQrCode}`, formData);
 
+      // Si el usuario ya está registrado, mostrar opción de descargar pase
+      if (res.data.alreadyRegistered) {
+        setAlreadyRegistered(res.data);
+        setSubmitting(false);
+        return;
+      }
+
       // La cookie httpOnly se guarda automáticamente
       // Guardar datos del cliente para referencia local
       localStorage.setItem('customerQrCode', res.data.customer.qrCode);
@@ -169,6 +177,143 @@ export default function JoinBusiness() {
   }
 
   const { business, programs } = businessInfo;
+
+  // Funciones para descargar pase (usuario ya registrado)
+  const addToAppleWallet = () => {
+    if (!alreadyRegistered) return;
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
+    window.location.href = `${apiUrl}/wallet/apple/${alreadyRegistered.customer.id}/${alreadyRegistered.business.id}`;
+  };
+
+  const addToGoogleWallet = async () => {
+    if (!alreadyRegistered) return;
+    setSubmitting(true);
+    try {
+      const response = await api.get(`/wallet/google/${alreadyRegistered.customer.id}/${alreadyRegistered.business.id}`);
+      if (response.data.saveUrl) {
+        window.open(response.data.saveUrl, '_blank');
+      }
+    } catch (err) {
+      setError('Error al generar la tarjeta de Google Wallet');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // UI para usuario ya registrado
+  if (alreadyRegistered) {
+    const customerQrImageUrl = alreadyRegistered.customer.qrCode
+      ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(alreadyRegistered.customer.qrCode)}&size=250x250&margin=20`
+      : '';
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            <h1 className="text-2xl font-bold text-gradient">Karma</h1>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-12">
+          {/* Already Registered Message */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <UserCheck className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+              ¡Hola de nuevo, {alreadyRegistered.customer.firstName}!
+            </h2>
+            <p className="text-lg text-gray-600 mb-2">
+              Ya estás registrado en <strong>{alreadyRegistered.business.name}</strong>
+            </p>
+            {alreadyRegistered.isNewEnrollment && (
+              <div className="inline-block bg-green-50 border border-green-200 rounded-lg px-4 py-2 mt-2">
+                <p className="text-sm text-green-700 font-medium">
+                  ✓ Te hemos inscrito en los programas de fidelización
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* QR Code */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div className="text-center">
+              <QrCode className="w-8 h-8 text-primary-600 mx-auto mb-3" />
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Tu código QR</h3>
+              <div className="inline-block p-4 bg-white rounded-xl border-2 border-gray-200 mb-4">
+                <img
+                  src={customerQrImageUrl}
+                  alt="Tu código QR"
+                  className="w-48 h-48"
+                />
+              </div>
+              <p className="text-sm text-gray-600">
+                Muestra este código en cada compra para acumular puntos
+              </p>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <span className="text-sm text-red-700">{error}</span>
+            </div>
+          )}
+
+          {/* Wallet Buttons */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">Descarga tu pase</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Guarda tu tarjeta en tu wallet para tenerla siempre a mano
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <button
+                onClick={addToAppleWallet}
+                disabled={submitting}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+              >
+                <Download className="w-5 h-5" />
+                Apple Wallet
+              </button>
+              <button
+                onClick={addToGoogleWallet}
+                disabled={submitting}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+              >
+                {submitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+                Google Wallet
+              </button>
+            </div>
+          </div>
+
+          {/* Link to MyPass */}
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              ¿Necesitas descargar el pase de otro negocio?{' '}
+              <Link to="/mi-pase" className="text-primary-600 hover:underline font-medium">
+                Recuperar mi pase
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-white border-t border-gray-200 py-8">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <p className="text-sm text-gray-500">
+              Powered by <span className="font-semibold text-gradient">Karma</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
