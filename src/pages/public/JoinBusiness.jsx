@@ -12,11 +12,8 @@ export default function JoinBusiness() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     firstName: '',
     lastName: '',
-    phone: '',
-    birthDate: '',
     pin: ''
   });
   const [confirmPin, setConfirmPin] = useState('');
@@ -112,11 +109,10 @@ export default function JoinBusiness() {
       navigate('/join-success', {
         state: {
           ...res.data,
-          business: { id: business.id, name: business.name }
+          business: { id: businessInfo.business.id, name: businessInfo.business.name }
         }
       });
     } catch (error) {
-      console.error('Error en registro:', error.response?.data);
 
       const errorData = error.response?.data;
       let serverMessage = errorData?.message;
@@ -262,10 +258,10 @@ export default function JoinBusiness() {
               <Gift className="w-8 h-8 text-primary-600" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              Regístrate gratis
+              Únete gratis
             </h3>
             <p className="text-gray-600">
-              Crea tu cuenta y serás inscrito automáticamente en todos los programas
+              Solo necesitas tu nombre, email y un PIN de 4 dígitos
             </p>
           </div>
 
@@ -322,51 +318,6 @@ export default function JoinBusiness() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                 placeholder="juan@ejemplo.com"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña * (mínimo 6 caracteres)
-              </label>
-              <input
-                type="password"
-                name="password"
-                required
-                minLength={6}
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                placeholder="••••••"
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Teléfono (opcional)
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                  placeholder="+56912345678"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha de nacimiento (opcional)
-                </label>
-                <input
-                  type="date"
-                  name="birthDate"
-                  value={formData.birthDate}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                />
-              </div>
             </div>
 
             {/* PIN Section */}
@@ -440,7 +391,7 @@ export default function JoinBusiness() {
                 <Shield className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-gray-600">
                   Este PIN te permite acumular puntos cuando no puedas mostrar tu QR.
-                  Solo proporciona tu teléfono o email + PIN al negocio como método alternativo.
+                  Solo proporciona tu email + PIN al negocio como método alternativo.
                 </p>
               </div>
             </div>
