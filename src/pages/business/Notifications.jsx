@@ -6,7 +6,6 @@ import { useBusinessAuth, NoBusinessMessage } from '../../hooks/useBusinessAuth.
 export default function Notifications() {
   const { business, loading: businessLoading, error: businessError } = useBusinessAuth();
   const [formData, setFormData] = useState({
-    title: '',
     message: '',
     targetAudience: 'all',
     minPoints: 0,
@@ -26,43 +25,35 @@ export default function Notifications() {
   // Plantillas predeterminadas profesionales
   const templates = {
     miss_you_2weeks: {
-      title: '¡Te extrañamos! 💙',
-      message: 'Han pasado 2 semanas desde tu última visita. ¡Vuelve pronto y disfruta de tus beneficios acumulados! ✨',
+      message: '¡Te extrañamos! 💙 Han pasado 2 semanas desde tu última visita. ¡Vuelve pronto y disfruta de tus beneficios acumulados! ✨',
       targetAudience: 'inactive_2weeks'
     },
     miss_you_1month: {
-      title: '¡Hace tiempo que no te vemos! 😊',
-      message: 'Han pasado 30 días desde tu última visita. ¡Te extrañamos! Vuelve y sigue acumulando recompensas 🎁',
+      message: '¡Hace tiempo que no te vemos! 😊 Han pasado 30 días desde tu última visita. Vuelve y sigue acumulando recompensas 🎁',
       targetAudience: 'inactive_1month'
     },
     special_offer: {
-      title: '🎉 ¡Oferta Especial para Ti!',
-      message: 'Aprovecha nuestra promoción exclusiva. ¡Solo por tiempo limitado! No te lo pierdas 🔥',
+      message: '🎉 ¡Oferta Especial para Ti! Aprovecha nuestra promoción exclusiva. ¡Solo por tiempo limitado! No te lo pierdas 🔥',
       targetAudience: 'all'
     },
     points_expiring: {
-      title: '⏰ Tus Puntos Están por Vencer',
-      message: 'Tienes puntos que expiran pronto. ¡Canjéalos ahora y disfruta de tus recompensas! 🎁',
+      message: '⏰ Tus puntos están por vencer. ¡Canjéalos ahora y disfruta de tus recompensas! 🎁',
       targetAudience: 'points'
     },
     new_benefit: {
-      title: '✨ ¡Nuevo Beneficio Disponible!',
-      message: 'Hemos agregado nuevas recompensas exclusivas para ti. ¡Descúbrelas ahora en nuestro catálogo! 🌟',
+      message: '✨ ¡Nuevo Beneficio Disponible! Hemos agregado nuevas recompensas exclusivas para ti. ¡Descúbrelas ahora! 🌟',
       targetAudience: 'active'
     },
     thank_loyal: {
-      title: '💝 ¡Gracias por tu Lealtad!',
-      message: 'Eres un cliente especial. Como agradecimiento, tenemos una sorpresa esperándote 🎊',
+      message: '💝 ¡Gracias por tu Lealtad! Eres un cliente especial. Como agradecimiento, tenemos una sorpresa esperándote 🎊',
       targetAudience: 'points'
     },
     comeback: {
-      title: '🌟 ¡Vuelve y Recibe un Regalo!',
-      message: 'Te tenemos una sorpresa especial. ¡Visítanos y reclama tu regalo de bienvenida! 🎁',
+      message: '🌟 ¡Vuelve y Recibe un Regalo! Te tenemos una sorpresa especial. ¡Visítanos y reclama tu regalo de bienvenida! 🎁',
       targetAudience: 'inactive_1month'
     },
     milestone: {
-      title: '🏆 ¡Felicitaciones!',
-      message: '¡Has alcanzado un nuevo nivel! Disfruta de beneficios exclusivos como cliente destacado ⭐',
+      message: '🏆 ¡Felicitaciones! Has alcanzado un nuevo nivel. Disfruta de beneficios exclusivos como cliente destacado ⭐',
       targetAudience: 'points'
     }
   };
@@ -117,7 +108,6 @@ export default function Notifications() {
       const template = templates[templateKey];
       setFormData({
         ...formData,
-        title: template.title,
         message: template.message,
         targetAudience: template.targetAudience
       });
@@ -148,7 +138,6 @@ export default function Notifications() {
 
     try {
       const payload = {
-        title: formData.title,
         message: formData.message,
         targetAudience: formData.targetAudience
       };
@@ -168,7 +157,6 @@ export default function Notifications() {
 
       // Reset form
       setFormData({
-        title: '',
         message: '',
         targetAudience: 'all',
         minPoints: 0,
@@ -316,25 +304,8 @@ export default function Notifications() {
                 </optgroup>
               </select>
               <p className="text-xs text-purple-700 mt-2">
-                💡 Selecciona una plantilla para auto-completar el título, mensaje y audiencia. Puedes editarlos después.
+                💡 Selecciona una plantilla para auto-completar el mensaje y audiencia. Puedes editarlos después.
               </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Título de la notificación *
-              </label>
-              <input
-                type="text"
-                name="title"
-                required
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                placeholder="Ej: ¡Nueva promoción disponible!"
-                maxLength={50}
-              />
-              <p className="text-xs text-gray-500 mt-1">{formData.title.length}/50 caracteres</p>
             </div>
 
             <div>
@@ -476,10 +447,7 @@ export default function Notifications() {
 
                       {/* Notification Content */}
                       <div className="px-4 pb-4">
-                        <p className="text-sm font-semibold text-gray-900 mb-1">
-                          {formData.title || 'Título de la notificación'}
-                        </p>
-                        <p className="text-sm text-gray-700">
+                        <p className="text-sm text-gray-900">
                           {formData.message || 'El mensaje de tu notificación aparecerá aquí mientras escribes...'}
                         </p>
                       </div>
@@ -532,10 +500,9 @@ export default function Notifications() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{notification.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                    <p className="text-sm text-gray-700">{notification.message}</p>
                   </div>
-                  <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs font-semibold rounded-full">
+                  <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs font-semibold rounded-full ml-4 flex-shrink-0">
                     {notification.recipientCount} destinatarios
                   </span>
                 </div>
@@ -561,7 +528,7 @@ export default function Notifications() {
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200 p-6 mt-8">
         <h3 className="text-lg font-bold text-gray-900 mb-3">💡 Consejos para Notificaciones Efectivas</h3>
         <ul className="text-sm text-gray-700 space-y-2">
-          <li>• <strong>Sé breve y claro:</strong> Los títulos deben ser concisos (máx. 50 caracteres)</li>
+          <li>• <strong>Sé breve y claro:</strong> Los mensajes concisos tienen mejor tasa de lectura</li>
           <li>• <strong>Crea urgencia:</strong> Usa palabras como "hoy", "ahora", "último día"</li>
           <li>• <strong>Personaliza:</strong> Segmenta tu audiencia para mensajes más relevantes</li>
           <li>• <strong>Timing óptimo:</strong> Envía notificaciones en horarios cuando tus clientes están más activos</li>
