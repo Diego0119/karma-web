@@ -8,7 +8,6 @@ import {
   Users,
   Award,
   Gift,
-  TrendingUp,
   Plus,
   ArrowRight,
   Star,
@@ -23,7 +22,6 @@ export default function BusinessDashboard() {
   const [stats, setStats] = useState({
     programs: 0,
     rewards: 0,
-    promotions: 0,
   });
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -78,16 +76,14 @@ export default function BusinessDashboard() {
         }
       };
 
-      const [programsData, rewardsData, promotionsData] = await Promise.all([
+      const [programsData, rewardsData] = await Promise.all([
         loadSafe('/loyalty/programs/my'),
         loadSafe('/rewards/my'),
-        loadSafe('/promotions/my'),
       ]);
 
       setStats({
         programs: programsData.length,
         rewards: rewardsData.length,
-        promotions: promotionsData.length,
       });
 
       // Cargar analytics (opcional para negocios nuevos)
@@ -150,13 +146,6 @@ export default function BusinessDashboard() {
       color: 'from-purple-500 to-pink-500',
       link: '/dashboard/rewards'
     },
-    {
-      title: 'Promociones Activas',
-      value: stats.promotions,
-      icon: TrendingUp,
-      color: 'from-orange-500 to-red-500',
-      link: '/dashboard/promotions'
-    },
   ];
 
   const quickActions = [
@@ -173,13 +162,6 @@ export default function BusinessDashboard() {
       icon: Gift,
       link: '/dashboard/rewards',
       color: 'from-purple-500 to-pink-500'
-    },
-    {
-      title: 'Crear Promoción',
-      description: 'Lanzar nueva promoción',
-      icon: TrendingUp,
-      link: '/dashboard/promotions',
-      color: 'from-orange-500 to-red-500'
     },
     {
       title: 'Gestionar Clientes',

@@ -36,7 +36,6 @@ const BusinessProfile = lazy(() => import('./pages/business/BusinessProfile'));
 const CardCustomization = lazy(() => import('./pages/business/CardCustomization'));
 const Programs = lazy(() => import('./pages/business/Programs'));
 const Rewards = lazy(() => import('./pages/business/Rewards'));
-const Promotions = lazy(() => import('./pages/business/Promotions'));
 const Notifications = lazy(() => import('./pages/business/Notifications'));
 const RegisterSale = lazy(() => import('./pages/business/RegisterSale'));
 const Customers = lazy(() => import('./pages/business/Customers'));
@@ -83,7 +82,6 @@ function DashboardRouter() {
         <Route path="/register-sale" element={<RegisterSale />} />
         <Route path="/programs" element={<Programs />} />
         <Route path="/rewards" element={<Rewards />} />
-        <Route path="/promotions" element={<Promotions />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/customers" element={<Customers />} />

@@ -9,16 +9,13 @@ import {
   Home,
   Store,
   Gift,
-  Tag,
   Users,
-  BarChart3,
   Settings,
   CreditCard,
   Award,
   ShoppingCart,
   Bell,
   ChevronUp,
-  User,
   FileText,
   Receipt
 } from 'lucide-react';
@@ -54,7 +51,6 @@ export default function DashboardLayout({ children }) {
       items: [
         { name: 'Programas', href: '/dashboard/programs', icon: Award },
         { name: 'Recompensas', href: '/dashboard/rewards', icon: Gift },
-        { name: 'Promociones', href: '/dashboard/promotions', icon: Tag },
         { name: 'Personalización', href: '/dashboard/card-customization', icon: CreditCard }
       ]
     },
@@ -85,8 +81,7 @@ export default function DashboardLayout({ children }) {
       items: [
         { name: 'Mis Tarjetas', href: '/customer/cards', icon: CreditCard },
         { name: 'Mis Puntos', href: '/customer/points', icon: Award },
-        { name: 'Recompensas', href: '/customer/my-rewards', icon: Gift },
-        { name: 'Promociones', href: '/customer/promotions', icon: Tag }
+        { name: 'Recompensas', href: '/customer/my-rewards', icon: Gift }
       ]
     },
     {
