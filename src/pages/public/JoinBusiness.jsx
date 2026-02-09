@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Store, Award, Star, Gift, AlertCircle, Loader2, CheckCircle2, ArrowRight, Lock, Shield, Download, QrCode, UserCheck } from 'lucide-react';
+import { Store, Award, Star, Gift, AlertCircle, Loader2, CheckCircle2, ArrowRight, Lock, Shield, Download, QrCode, UserCheck, Mail } from 'lucide-react';
 import api from '../../services/api';
 
 export default function JoinBusiness() {
@@ -20,6 +20,12 @@ export default function JoinBusiness() {
   const [confirmPin, setConfirmPin] = useState('');
   const pinInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
   const confirmPinInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+
+  // Estado para verificación de código (cliente existente en otro negocio)
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const codeInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null), useRef(null), useRef(null)];
 
   useEffect(() => {
     loadBusinessInfo();
@@ -81,6 +87,74 @@ export default function JoinBusiness() {
     }
   };
 
+  // Handlers para código de verificación (6 dígitos)
+  const handleCodeChange = (index, value) => {
+    if (value && !/^\d$/.test(value)) return;
+
+    const newCode = verificationCode.split('');
+    newCode[index] = value;
+    setVerificationCode(newCode.join('').slice(0, 6));
+
+    if (value && index < 5) {
+      codeInputRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleCodeKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
+      codeInputRefs[index - 1].current?.focus();
+    }
+    if (e.key === 'ArrowLeft' && index > 0) {
+      codeInputRefs[index - 1].current?.focus();
+    }
+    if (e.key === 'ArrowRight' && index < 5) {
+      codeInputRefs[index + 1].current?.focus();
+    }
+  };
+
+  // Verificar código enviado por email
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    if (verificationCode.length !== 6) {
+      setError('Ingresa el código de 6 dígitos');
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const res = await api.post('/auth/verify-login-code', {
+        email: formData.email,
+        code: verificationCode
+      });
+
+      // Verificación exitosa - ahora inscribir en el negocio
+      // El backend ya debería haber seteado la cookie
+      if (res.data.customer) {
+        localStorage.setItem('customerQrCode', res.data.customer.qrCode);
+
+        navigate('/join-success', {
+          state: {
+            ...res.data,
+            business: { id: businessInfo.business.id, name: businessInfo.business.name }
+          }
+        });
+      }
+    } catch (err) {
+      const message = err.response?.data?.message;
+      if (message?.toLowerCase().includes('expirado') || message?.toLowerCase().includes('expired')) {
+        setError('El código ha expirado. Intenta registrarte nuevamente.');
+      } else if (message?.toLowerCase().includes('incorrecto') || message?.toLowerCase().includes('invalid')) {
+        setError('Código incorrecto. Revisa tu email e intenta de nuevo.');
+      } else {
+        setError(message || 'Error al verificar el código');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -102,7 +176,15 @@ export default function JoinBusiness() {
     try {
       const res = await api.post(`/public/join/${businessQrCode}`, formData);
 
-      // Si el usuario ya está registrado, mostrar opción de descargar pase
+      // Si requiere verificación (cliente existe en otro negocio)
+      if (res.data.requiresVerification) {
+        setRequiresVerification(true);
+        setVerificationMessage(res.data.message || 'Revisa tu email para obtener el código de verificación');
+        setSubmitting(false);
+        return;
+      }
+
+      // Si el usuario ya está registrado en este negocio, mostrar opción de descargar pase
       if (res.data.alreadyRegistered) {
         setAlreadyRegistered(res.data);
         setSubmitting(false);
@@ -199,6 +281,119 @@ export default function JoinBusiness() {
       setSubmitting(false);
     }
   };
+
+  // UI para verificación de código (cliente existe en otro negocio)
+  if (requiresVerification) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            <h1 className="text-2xl font-bold text-gradient">Karma</h1>
+          </div>
+        </div>
+
+        <div className="max-w-md mx-auto px-4 py-12">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            {/* Icon */}
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Mail className="w-10 h-10 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                Verifica tu email
+              </h2>
+              <p className="text-gray-600">
+                {verificationMessage}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Enviamos un código a <strong>{formData.email}</strong>
+              </p>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                <span className="text-sm text-red-700">{error}</span>
+              </div>
+            )}
+
+            {/* Code Input Form */}
+            <form onSubmit={handleVerifyCode} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4 text-center">
+                  Código de 6 dígitos
+                </label>
+                <div className="flex gap-2 justify-center">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <input
+                      key={index}
+                      ref={codeInputRefs[index]}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={verificationCode[index] || ''}
+                      onChange={(e) => handleCodeChange(index, e.target.value)}
+                      onKeyDown={(e) => handleCodeKeyDown(index, e)}
+                      className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                      disabled={submitting}
+                      autoFocus={index === 0}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting || verificationCode.length !== 6}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-6 h-6" />
+                    Verificar código
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Info */}
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800 text-center">
+                <strong>¿No recibiste el código?</strong><br />
+                Revisa tu carpeta de spam o{' '}
+                <button
+                  onClick={() => {
+                    setRequiresVerification(false);
+                    setVerificationCode('');
+                    setError('');
+                  }}
+                  className="text-primary-600 hover:underline font-medium"
+                >
+                  intenta de nuevo
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-white border-t border-gray-200 py-8">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <p className="text-sm text-gray-500">
+              Powered by <span className="font-semibold text-gradient">Karma</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // UI para usuario ya registrado
   if (alreadyRegistered) {

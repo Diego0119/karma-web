@@ -8,8 +8,12 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
+  // Obtener nombre del negocio guardado en el registro
+  const pendingBusinessName = localStorage.getItem('pendingBusinessName') || '';
+
   // Step 1: Business Info
   const [businessData, setBusinessData] = useState({
+    name: pendingBusinessName,
     category: '',
     address: '',
     phone: ''
@@ -50,7 +54,9 @@ export default function Onboarding() {
   const handleStep1Next = async () => {
     setLoading(true);
     try {
+      const businessName = businessData.name.trim() || 'Mi Negocio';
       const dataToSave = {
+        name: businessName,
         category: businessData.category === 'Otro' ? customCategory : businessData.category,
         address: businessData.address,
         phone: businessData.phone
@@ -60,14 +66,13 @@ export default function Onboarding() {
       try {
         const businessRes = await api.get('/business/me');
         if (businessRes.data && businessRes.data.id) {
-          // Si existe, actualizar
+          // Si existe, actualizar (incluyendo el nombre)
           await api.patch(`/business/${businessRes.data.id}`, dataToSave);
         }
       } catch (error) {
         // Si no existe (404), crear el negocio
         if (error.response?.status === 404) {
           await api.post('/business', {
-            name: 'Mi Negocio', // Nombre por defecto, se puede cambiar después
             description: '',
             ...dataToSave
           });
@@ -76,9 +81,12 @@ export default function Onboarding() {
         }
       }
 
+      // Limpiar el nombre guardado del localStorage
+      localStorage.removeItem('pendingBusinessName');
+
       setCurrentStep(2);
     } catch (error) {
-      
+
       alert('Error al guardar información del negocio. Por favor intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -117,24 +125,28 @@ export default function Onboarding() {
     try {
       await api.get('/business/me');
       // Si existe, ir al dashboard
+      localStorage.removeItem('pendingBusinessName');
       navigate('/dashboard');
     } catch (error) {
       // Si no existe (404), crear el negocio con datos mínimos
       if (error.response?.status === 404) {
         try {
+          const businessName = pendingBusinessName || 'Mi Negocio';
           await api.post('/business', {
-            name: 'Mi Negocio',
+            name: businessName,
             description: '',
             category: '',
             address: '',
             phone: ''
           });
+          localStorage.removeItem('pendingBusinessName');
           navigate('/dashboard');
         } catch (createError) {
-          
+
           alert('Error al crear el perfil del negocio. Por favor completa el onboarding.');
         }
       } else {
+        localStorage.removeItem('pendingBusinessName');
         navigate('/dashboard');
       }
     }
@@ -237,6 +249,19 @@ export default function Onboarding() {
             </div>
 
             <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre del negocio *
+                </label>
+                <input
+                  type="text"
+                  value={businessData.name}
+                  onChange={(e) => handleBusinessDataChange('name', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Nombre de tu negocio"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Categoría del negocio

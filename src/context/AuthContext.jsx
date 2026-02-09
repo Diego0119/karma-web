@@ -85,6 +85,10 @@ export const AuthProvider = ({ children }) => {
 
       // Paso 2: Si es BUSINESS, requiere verificación de email
       if (role === 'BUSINESS') {
+        // Guardar el nombre del negocio para usarlo después del onboarding
+        if (businessName) {
+          localStorage.setItem('pendingBusinessName', businessName.trim());
+        }
         // No guardar en estado hasta que verifique email
         return {
           success: true,
